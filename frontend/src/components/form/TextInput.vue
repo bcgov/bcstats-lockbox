@@ -35,10 +35,9 @@ const { errorMessage, value } = useField<string>(toRef(props, 'name'));
       :class="{ 'p-invalid': errorMessage }"
       :disabled="disabled"
     />
-    <small :id="`${name}-help`">{{ helpText }}</small>
-    <ErrorMessage
-      :name="name"
-    />
+    <!-- eslint-disable-next-line vue/no-v-html -->
+    <small :id="`${name}-help`"><span v-html="helpText" /></small>
+    <ErrorMessage :name="name" />
   </div>
 </template>
 

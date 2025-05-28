@@ -30,7 +30,6 @@ afterEach(() => {
 });
 
 describe('Metadata Store', () => {
-
   let appStore: StoreGeneric;
   let metadataStore: StoreGeneric;
 
@@ -73,18 +72,17 @@ describe('Metadata Store', () => {
       expect(getMetadataSpy).toHaveBeenCalledTimes(1);
       expect(getMetadataSpy).toHaveBeenCalledWith(null, { objectId: '000' });
       expect(mockToast).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledWith('Fetching metadata', new Error);
+      expect(mockToast).toHaveBeenCalledWith('Fetching metadata', new Error(), { life: 0 });
       expect(endIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
       expect(metadataStore.getMetadata).toStrictEqual([]);
     });
   });
 
-
   describe('findMetadataByObjectId', () => {
     it('returns matching metadata', async () => {
       metadataStore.metadata = [meta];
 
-      const result = metadataStore.findMetadataByObjectId('000');
+      const result = metadataStore.getMetadataByObjectId('000');
 
       expect(result).toStrictEqual(meta);
     });
@@ -92,12 +90,11 @@ describe('Metadata Store', () => {
     it('returns undefined when no match found', async () => {
       metadataStore.metadata = [meta];
 
-      const result = metadataStore.findMetadataByObjectId('111');
+      const result = metadataStore.getMetadataByObjectId('111');
 
       expect(result).toStrictEqual(undefined);
     });
   });
-
 
   describe('findValue', () => {
     it('returns matching metadata', async () => {

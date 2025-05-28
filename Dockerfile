@@ -1,51 +1,70 @@
-# FROM docker.io/node:16.15.0-alpine # Last known working alpine image
-
-# RedHat Image Catalog references
-# https://catalog.redhat.com/software/containers/ubi9/nodejs-18/62e8e7ed22d1d3c2dfe2ca01
-# https://catalog.redhat.com/software/containers/ubi9/nodejs-18-minimal/62e8e919d4f57d92a9dee838
+ARG APP_ROOT=/opt/app-root/src
+ARG BASE_IMAGE=docker.io/node:20.15.1-alpine3.20
 
 #
-# Build the application
+# Build the app
 #
-FROM registry.access.redhat.com/ubi9/nodejs-18:1-62.1692771036 as application
+FROM ${BASE_IMAGE} as app
 
+ARG APP_ROOT
 ENV NO_UPDATE_NOTIFIER=true
 
-USER 0
-COPY app /tmp/src/app
-WORKDIR /tmp/src/app
-RUN chown -R 1001:0 /tmp/src/app
+# NPM Permission Fix
+RUN mkdir -p /.npm
+RUN chown -R 1001:0 /.npm
 
+# Build App
+COPY app ${APP_ROOT}
+RUN chown -R 1001:0 ${APP_ROOT}
 USER 1001
-RUN npm ci --omit=dev
+WORKDIR ${APP_ROOT}
+RUN npm ci && npm run build
 
 #
 # Build the frontend
 #
-FROM registry.access.redhat.com/ubi9/nodejs-18:1-62.1692771036 as frontend
+FROM ${BASE_IMAGE} as frontend
 
+ARG APP_ROOT
 ENV NO_UPDATE_NOTIFIER=true
 
-USER 0
-COPY frontend /tmp/src/frontend
-WORKDIR /tmp/src/frontend
-RUN chown -R 1001:0 /tmp/src/frontend
+# NPM Permission Fix
+RUN mkdir -p /.npm
+RUN chown -R 1001:0 /.npm
 
+# Build Frontend
+COPY frontend ${APP_ROOT}
+RUN chown -R 1001:0 ${APP_ROOT}
 USER 1001
+WORKDIR ${APP_ROOT}
 RUN npm ci && npm run build
 
 #
 # Create the final container image
 #
-FROM registry.access.redhat.com/ubi9/nodejs-18-minimal:1-67
+FROM ${BASE_IMAGE}
 
+ARG APP_ROOT
 ENV APP_PORT=8080 \
     NO_UPDATE_NOTIFIER=true
 
-COPY --from=application /tmp/src/app ${HOME}
-COPY --from=frontend /tmp/src/frontend/dist ${HOME}/dist
-COPY .git ${HOME}/.git
-WORKDIR ${HOME}
+# NPM Permission Fix
+RUN mkdir -p /.npm
+RUN chown -R 1001:0 /.npm
+
+# Install File Structure
+COPY --from=app ${APP_ROOT}/sbin ${APP_ROOT}/sbin
+COPY --from=frontend ${APP_ROOT}/dist ${APP_ROOT}/dist
+COPY .git ${APP_ROOT}/.git
+COPY app/config ${APP_ROOT}/config
+COPY app/config ${APP_ROOT}/sbin/config
+COPY app/package.json app/package-lock.json ${APP_ROOT}
+WORKDIR ${APP_ROOT}
+
+# Install Application
+RUN chown -R 1001:0 ${APP_ROOT}
+USER 1001
+RUN npm ci --omit=dev
 
 EXPOSE ${APP_PORT}
-CMD ["npm", "run", "start"]
+CMD ["node", "./sbin/bin/www"]

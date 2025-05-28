@@ -25,7 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
   metadata: () => [{ key: '', value: '' }],
   metadataEditable: true,
   tagset: () => [{ key: '', value: '' }],
-  tagsetEditable: true,
+  tagsetEditable: true
 });
 
 // Emits
@@ -44,16 +44,16 @@ const toast = useToast();
 const onSubmit = async (values: any) => {
   try {
     // Remove any rows where key or value is empty
-    values.metadata = values.metadata?.filter( (x: {key: string, value: string}) => x.key && x.value );
-    values.tagset = values.tagset?.filter( (x: {key: string, value: string}) => x.key && x.value );
+    values.metadata = values.metadata?.filter((x: { key: string; value: string }) => x.key && x.value);
+    values.tagset = values.tagset?.filter((x: { key: string; value: string }) => x.key && x.value);
 
     emit('submit-object-metadatatag-config', {
       filename: props.filename,
       metadata: values.metadata,
-      tagset: values.tagset,
+      tagset: values.tagset
     } as ObjectMetadataTagFormType);
   } catch (error: any) {
-    toast.error('Adding metadata and tags', error);
+    toast.error('Adding metadata and tags', error.response?.data.detail ?? error, { life: 0 });
   }
 };
 
@@ -65,8 +65,7 @@ onBeforeMount(() => {
   // Empty arrays can be given which won't trigger default prop values so check to see if blank rows need to be added
   initialValues.metadata = initialValues.metadata?.length ? initialValues.metadata : [{ key: '', value: '' }];
 
-  // Filter coms-id first before determining initial set
-  initialValues.tagset = initialValues.tagset?.filter( (x: {key: string, value: string}) => x.key !== 'coms-id' );
+  // Determine initial set
   initialValues.tagset = initialValues.tagset?.length ? initialValues.tagset : [{ key: '', value: '' }];
 });
 </script>
@@ -81,17 +80,11 @@ onBeforeMount(() => {
         <!-- TODO: Wrap these field arrays into a common key/value pair component? -->
         <div class="grid">
           <div class="col-12">
-            <h2 class="font-bold">
-              Metadata
-            </h2>
+            <h2>Metadata</h2>
           </div>
           <div class="grid col-11 pb-0 pt-0">
-            <div class="col-6">
-              Key
-            </div>
-            <div class="col-6">
-              Value
-            </div>
+            <div class="col-6">Key</div>
+            <div class="col-6">Value</div>
           </div>
           <div class="col" />
         </div>
@@ -106,14 +99,10 @@ onBeforeMount(() => {
           >
             <div class="grid col-11">
               <div class="col">
-                <TextInput
-                  :name="`metadata.${index}.key`"
-                />
+                <TextInput :name="`metadata.${index}.key`" />
               </div>
               <div class="col">
-                <TextInput
-                  :name="`metadata.${index}.value`"
-                />
+                <TextInput :name="`metadata.${index}.value`" />
               </div>
             </div>
             <div class="col flex align-content-center justify-content-center p-0">
@@ -133,7 +122,8 @@ onBeforeMount(() => {
               <font-awesome-icon
                 icon="fa-solid fa-plus"
                 class="mr-1"
-              /> Add row
+              />
+              Add row
             </Button>
           </div>
         </FieldArray>
@@ -142,17 +132,11 @@ onBeforeMount(() => {
       <span v-if="tagsetEditable">
         <div class="grid">
           <div class="col-12">
-            <h2 class="font-bold">
-              Tags
-            </h2>
+            <h2>Tags</h2>
           </div>
           <div class="grid col-11">
-            <div class="col-6 pt-0">
-              Key
-            </div>
-            <div class="col-6 pt-0">
-              Value
-            </div>
+            <div class="col-6 pt-0">Key</div>
+            <div class="col-6 pt-0">Value</div>
           </div>
           <div class="col" />
         </div>
@@ -167,14 +151,10 @@ onBeforeMount(() => {
           >
             <div class="grid col-11 pb-0 pt-0">
               <div class="col">
-                <TextInput
-                  :name="`tagset.${index}.key`"
-                />
+                <TextInput :name="`tagset.${index}.key`" />
               </div>
               <div class="col">
-                <TextInput
-                  :name="`tagset.${index}.value`"
-                />
+                <TextInput :name="`tagset.${index}.value`" />
               </div>
             </div>
             <div class="col flex align-content-center justify-content-center p-0">
@@ -195,26 +175,28 @@ onBeforeMount(() => {
               <font-awesome-icon
                 icon="fa-solid fa-plus"
                 class="mr-1"
-              /> Add row
+              />
+              Add row
             </Button>
             <div v-if="fields.length >= MAX_TAGS">
               <font-awesome-icon
                 icon="fa-solid fa-triangle-exclamation"
                 class="mr-1"
-              /> Tag limit reached
+              />
+              Tag limit reached
             </div>
           </div>
         </FieldArray>
       </span>
 
       <Button
-        class="mt-5"
+        class="mt-5 mr-2"
         label="Save"
         type="submit"
         icon="pi pi-check"
       />
       <Button
-        class="p-button-text mt-2"
+        class="p-button-outlined mt-2"
         label="Cancel"
         icon="pi pi-times"
         @click="onCancel"

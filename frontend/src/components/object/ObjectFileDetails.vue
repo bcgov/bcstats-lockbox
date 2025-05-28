@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { onBeforeMount, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import {
@@ -14,10 +14,11 @@ import {
   ObjectUploadBasic,
   ObjectVersion
 } from '@/components/object';
-import { ShareObjectButton } from '@/components/object/share';
-import { Dialog, Divider, useToast } from '@/lib/primevue';
+import { ShareButton } from '@/components/common';
+import { Button, Dialog, Divider } from '@/lib/primevue';
 import {
   useAuthStore,
+  useBucketStore,
   useMetadataStore,
   useObjectStore,
   usePermissionStore,
@@ -26,179 +27,164 @@ import {
 } from '@/store';
 import { Permissions, RouteNames } from '@/utils/constants';
 import { ButtonMode } from '@/utils/enums';
-import { formatDateLong } from '@/utils/formatters';
 
 import type { Ref } from 'vue';
-import type { COMSObject, Version } from '@/types';
+import type { COMSObject } from '@/types';
 
 // Props
 type Props = {
-  objectId: string,
-  versionId?: string
+  objectId: string;
+  versionId: string;
 };
 
-const props = withDefaults(defineProps<Props>(), {
-  versionId: undefined
-});
+const props = withDefaults(defineProps<Props>(), {});
+
+const router = useRouter();
 
 // Store
+const bucketStore = useBucketStore();
 const metadataStore = useMetadataStore();
 const objectStore = useObjectStore();
 const permissionStore = usePermissionStore();
 const tagStore = useTagStore();
 const versionStore = useVersionStore();
-const { getObjects } = storeToRefs(objectStore);
+
 const { getUserId } = storeToRefs(useAuthStore());
+const { getObject } = storeToRefs(objectStore);
+const {
+  getIsDeleted,
+  getLatestVersionIdByObjectId,
+  getLatestNonDmVersionIdByObjectId,
+  getVersionsByObjectId,
+  getIsVersioningEnabled
+} = storeToRefs(versionStore);
 
 // State
+const object: Ref<COMSObject | undefined> = ref(undefined);
 const bucketId: Ref<string> = ref('');
-const latestVersionId: Ref<string | undefined> = ref(undefined);
-const obj: Ref<COMSObject | undefined> = ref(undefined);
 const permissionsVisible: Ref<boolean> = ref(false);
-const permissionsObjectId: Ref<string> = ref('');
-const permissionsObjectName: Ref<string | undefined> = ref('');
-const version: Ref<Version | undefined> = ref(undefined);
 
-// Actions
-const router = useRouter();
-const toast = useToast();
+// version stuff
+const bucketVersioningEnabled = computed(() => getIsVersioningEnabled.value(props.objectId));
+const currentVersionId: Ref<string | undefined> = ref(props.versionId);
+const latestVersionId = computed(() => getLatestVersionIdByObjectId.value(props.objectId));
+const allVersions = computed(() => getVersionsByObjectId.value(props.objectId));
+const latestNonDmVersionId = computed(() => getLatestNonDmVersionIdByObjectId.value(props.objectId));
 
-/*const showPermissions = async (objectId: string) => {
-  permissionsVisible.value = true;
-  permissionsObjectId.value = objectId;
-  permissionsObjectName.value = obj.value?.name;
-};*/
+const isDeleted: Ref<boolean> = computed(() => getIsDeleted.value(props.objectId));
 
-async function onDeletedSuccess(versionId: string) {
-  toast.success('File deleted');
+async function fetchFileDetails(objectId: string){
+  await Promise.all([
+    versionStore.fetchVersions({ objectId: objectId }),
+    metadataStore.fetchMetadata({ objectId: objectId }),
+    tagStore.fetchTagging({ objectId: objectId })
+  ]).then(async () => {
+    await Promise.all([
+      versionStore.fetchMetadata({ objectId: objectId }),
+      versionStore.fetchTagging({ objectId: objectId })
+    ]);
+  });
+}
 
-  // go back to the List Objects page if we deleted the last version
-  if (versionStore.findVersionsByObjectId(props.objectId).length === 1){
-    router.push({ name: RouteNames.LIST_OBJECTS, query: {
-      bucketId: bucketId.value
-    }});
+async function onObjectDeleted({ hardDelete }: { hardDelete:boolean }) {
+  // if doing hard delete redirect to parent folder
+  if (hardDelete || !bucketVersioningEnabled.value) {
+    router.push({ path: '/list/objects', query: { bucketId: bucketId.value }});
   }
   else {
-    await Promise.all([
-      objectStore.fetchObjects({objectId: props.objectId, userId: getUserId.value, bucketPerms: true}),
-      versionStore.fetchVersions({ objectId: props.objectId })
-    ]);
-    
-    // Navigate to new latest version if deleting active version
-    if( props.versionId === versionId ) {
-      router.push({ name: RouteNames.DETAIL_OBJECTS, query: {
-        objectId: props.objectId,
-        versionId: versionStore.findLatestVersionIdByObjectId(props.objectId)
-      }});
-    }
+    await fetchFileDetails(props.objectId);
+    currentVersionId.value = latestNonDmVersionId.value;
   }
 }
 
-async function onFileUploaded() {
+async function onVersionDeleted(changedVersionId: string | undefined, isVersion: boolean, hardDelete: boolean) {
+  // if doing hard delete or no versions left, redirect to parent folder
+  const otherVersions = allVersions.value.filter(v=>v.id !== changedVersionId);
+  if (hardDelete || (isVersion && otherVersions.length === 0)) {
+    router.push({ path: '/list/objects', query: { bucketId: bucketId.value }});
+  }
+  // else stay on page
+  else {
+    await fetchFileDetails(props.objectId);
+    currentVersionId.value = latestNonDmVersionId.value;
+  }
+}
+
+async function onVersionCreated() {
+  await fetchFileDetails(props.objectId)
+    .then(() => {
+      currentVersionId.value = latestNonDmVersionId.value;
+    });
+
+}
+
+onMounted(async () => {
+  const head = await objectStore.headObject(props.objectId);
+
+  await permissionStore.fetchBucketPermissions({ userId: getUserId.value, objectPerms: true });
+  await objectStore.fetchObjects({ objectId: props.objectId, userId: getUserId.value, bucketPerms: true });
+  object.value = getObject.value(props.objectId);
+  bucketId.value = object.value ? object.value.bucketId : '';
+  if (
+    (head?.status !== 204 && !isDeleted.value) &&
+    (!object.value ||
+      !permissionStore.isObjectActionAllowed(object.value.id, getUserId.value, Permissions.READ, object.value.bucketId))
+  ) {
+    router.replace({ name: RouteNames.FORBIDDEN });
+  }
+  // fetch data for child components
   await Promise.all([
-    objectStore.fetchObjects({objectId: props.objectId, userId: getUserId.value, bucketPerms: true}),
-    versionStore.fetchVersions({ objectId: props.objectId })
+    bucketStore.fetchBuckets({ bucketId: bucketId.value }),
+    fetchFileDetails(props.objectId)
   ]);
-
-  // Obtaining the version id and passing it to the route forces a destruct/construct of the component
-  // Easier approach than attempting to in-place refresh all the data
-  router.push({ name: RouteNames.DETAIL_OBJECTS, query: {
-    objectId: props.objectId,
-    versionId: versionStore.findLatestVersionIdByObjectId(props.objectId)
-  }});
-}
-
-onBeforeMount( async () => {
-  if( props.objectId ) {
-    const head = await objectStore.headObject(props.objectId);
-    let isPublic = head?.status === 204;
-
-    await permissionStore.fetchBucketPermissions({userId: getUserId.value, objectPerms: true});
-    await objectStore.fetchObjects({objectId: props.objectId, userId: getUserId.value, bucketPerms: true});
-    obj.value = objectStore.findObjectById(props.objectId);
-    const bucketId = obj.value?.bucketId;
-
-    if( !isPublic &&
-      ( !obj.value ||
-        !permissionStore.isObjectActionAllowed(obj.value.id, getUserId.value, Permissions.READ, bucketId) ) ) {
-      router.replace({ name: RouteNames.FORBIDDEN });
-    }
-  }
-});
-
-watch( [props, getObjects], async () => {
-  await metadataStore.fetchMetadata({objectId: props.objectId});
-  tagStore.fetchTagging({objectId: props.objectId});
-  obj.value = objectStore.findObjectById(props.objectId);
-  bucketId.value = obj.value?.bucketId || '';
-  latestVersionId.value = versionStore.findLatestVersionIdByObjectId(props.objectId);
-
-  if( props.versionId ) {
-    await versionStore.fetchMetadata({versionId: props.versionId});
-    versionStore.fetchTagging({versionId: props.versionId});
-    version.value = versionStore.findVersionById(props.versionId);
-  }
 });
 </script>
 
 <template>
-  <div v-if="obj">
-    <div class="grid pol-0">
+  <div v-if="object">
+    <div class="grid grid-nogutter">
       <div class="col-12">
-        <h1
-          class="pl-1 font-bold heading"
-        >
-          <span v-if="latestVersionId !== props.versionId">
-            Previous version:
-            {{ formatDateLong(version?.createdAt as string) }}
-          </span>
-          <span v-else>
-            File details
-          </span>
-        </h1>
+        <h1 class="heading">File details</h1>
       </div>
       <div class="flex col justify-content-start">
-        <div class="flex col align-items-center heading">
-          <font-awesome-icon
-            icon="fa-solid fa-circle-info"
-            style="font-size: 2rem"
-          />
-          <h1 class="pl-1 font-bold">
-            {{ obj.name }}
-          </h1>
+        <div class="flex col align-items-center heading pl-0">
+          <span class="material-icons-outlined icon-large pr-2">info</span>
+          <h2 class="">
+            {{ object.name }}
+          </h2>
         </div>
 
-        <div
-          class="action-buttons"
-        >
-          <v-tooltip text="Share">
-            <ShareObjectButton
-              :id="props.objectId"
-            />
-          </v-tooltip>
-          <DownloadObjectButton
-            v-if="obj.public || permissionStore.isObjectActionAllowed(
-              props.objectId, getUserId, Permissions.READ, bucketId)"
-            :mode="ButtonMode.ICON"
-            :ids="[props.objectId]"
-            :version-id="props.versionId"
+        <div class="action-buttons">
+          <ShareButton
+            v-if="!isDeleted"
+            :object-id="props.objectId"
+            label-text="File"
           />
-          <!--<Button
-            v-if="permissionStore.isObjectActionAllowed(
-              props.objectId, getUserId, Permissions.MANAGE, bucketId)"
-            v-tooltip.bottom="'File Permissions'"
-            class="p-button-lg p-button-text"
-            @click="showPermissions(props.objectId)"
-          >
-            <font-awesome-icon icon="fa-solid fa-users" />
-          </Button>-->
-          <DeleteObjectButton
-            v-if="permissionStore.isObjectActionAllowed(
-              props.objectId, getUserId, Permissions.DELETE, bucketId)"
+          <DownloadObjectButton
+            v-if="(object.public ||
+              permissionStore.isObjectActionAllowed(object.id, getUserId, Permissions.READ, bucketId)) &&
+              !isDeleted"
             :mode="ButtonMode.ICON"
-            :ids="[props.objectId]"
-            :version-id="props.versionId"
-            @on-deleted-success="onDeletedSuccess"
+            :ids="[object.id]"
+            :version-id="currentVersionId"
+          />
+          <Button
+            v-if="permissionStore.isObjectActionAllowed(object.id, getUserId, Permissions.MANAGE, bucketId) &&
+              !isDeleted"
+            v-tooltip.bottom="'File permissions'"
+            class="p-button-lg p-button-text"
+            aria-label="File permissions"
+            @click="permissionsVisible = true"
+          >
+            <span class="material-icons-outlined">supervisor_account</span>
+          </Button>
+          <DeleteObjectButton
+            v-if="permissionStore.isObjectActionAllowed(object.id, getUserId, Permissions.DELETE, bucketId)"
+            class="xl"
+            :mode="ButtonMode.ICON"
+            :ids="[object.id]"
+            :hard-delete="isDeleted || !bucketVersioningEnabled"
+            @on-object-deleted="onObjectDeleted"
           />
         </div>
       </div>
@@ -207,66 +193,60 @@ watch( [props, getObjects], async () => {
     <div class="flex flex-row">
       <div class="flex flex-column w-6 gap-3 py-5">
         <ObjectProperties
-          :object-id="props.objectId"
-          :version-id="props.versionId"
+          :object-id="object.id"
           :full-view="true"
         />
-        <ObjectAccess :object-id="props.objectId" />
+        <ObjectAccess :object-id="object.id" />
         <ObjectMetadata
-          :editable="props.versionId === latestVersionId"
-          :object-id="props.objectId"
-          :version-id="props.versionId"
-          @on-file-uploaded="onFileUploaded"
+          v-model:version-id="currentVersionId"
+          :editable="!isDeleted && (currentVersionId === latestVersionId)"
+          :object-id="object.id"
+          @on-metadata-success="onVersionCreated"
         />
       </div>
       <Divider layout="vertical" />
-      <div class="flex flex-column w-6 gap-3 py-5">
+      <div class="flex flex-column w-6 gap-4 xl:pl-3 py-5">
         <div class="flex flex-row-reverse">
           <ObjectUploadBasic
-            v-if="permissionStore.isObjectActionAllowed(
-              props.objectId, getUserId, Permissions.UPDATE, bucketId)"
+            v-if="permissionStore.isObjectActionAllowed(object.id, getUserId, Permissions.UPDATE, object.bucketId)"
             :bucket-id="bucketId"
-            :object-id="props.objectId"
-            @on-file-uploaded="onFileUploaded"
+            :object-id="object.id"
+            @on-file-uploaded="onVersionCreated"
           />
         </div>
         <ObjectVersion
-          v-if="props.versionId"
+          v-model:version-id="currentVersionId"
           :bucket-id="bucketId"
-          :object-id="props.objectId"
-          :version-id="props.versionId"
+          :object-id="object.id"
+          @on-object-deleted="onObjectDeleted"
+          @on-version-deleted="onVersionDeleted"
+          @on-version-restored="onVersionCreated"
         />
         <ObjectTag
-          :editable="props.versionId === latestVersionId"
-          :object-id="props.objectId"
-          :version-id="props.versionId"
-          @on-file-uploaded="onFileUploaded"
+          v-model:version-id="currentVersionId"
+          :object-id="object.id"
+          :editable="!isDeleted"
         />
       </div>
     </div>
   </div>
 
-  <!-- eslint-disable vue/no-v-model-argument -->
   <Dialog
     v-model:visible="permissionsVisible"
     :draggable="false"
     :modal="true"
-    class="bcbox-info-dialog permissions-modal"
+    class="bcbox-info-dialog"
   >
-    <!-- eslint-enable vue/no-v-model-argument -->
     <template #header>
-      <font-awesome-icon
-        icon="fas fa-users"
-        fixed-width
-      />
-      <span class="p-dialog-title">Object Permissions</span>
+      <span class="material-icons-outlined">supervisor_account</span>
+      <span class="p-dialog-title">File Permissions</span>
     </template>
 
     <h3 class="bcbox-info-dialog-subhead">
-      {{ permissionsObjectName }}
+      {{ object?.name }}
     </h3>
 
-    <ObjectPermission :object-id="permissionsObjectId" />
+    <ObjectPermission :object-id="props.objectId" />
   </Dialog>
 </template>
 

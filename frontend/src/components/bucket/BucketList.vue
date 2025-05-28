@@ -6,6 +6,7 @@ import { BucketConfigForm, BucketSidebar, BucketTable } from '@/components/bucke
 import { Button, Dialog, Message } from '@/lib/primevue';
 import { useAuthStore, useBucketStore, useConfigStore, usePermissionStore } from '@/store';
 import { BucketConfig } from '@/utils/constants';
+import { onDialogHide } from '@/utils/utils';
 
 import type { Ref } from 'vue';
 import type { Bucket } from '@/types';
@@ -23,7 +24,7 @@ const bucketToUpdate: Ref<Bucket | undefined> = ref(undefined);
 
 // Actions
 const showSidebarInfo = async (bucketId: string) => {
-  sidebarInfo.value = bucketStore.findBucketById(bucketId);
+  sidebarInfo.value = bucketStore.getBucket(bucketId);
 };
 
 const closeSidebarInfo = () => {
@@ -38,6 +39,7 @@ const showBucketConfig = (bucket?: Bucket) => {
 
 const closeBucketConfig = () => {
   displayBucketConfig.value = false;
+  onDialogHide();
 };
 
 onMounted(async () => {
@@ -46,44 +48,64 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
-    <div>
-      <h1>Select a bucket</h1>
-      <h3>Buckets are containers for storing objects.</h3>
-      <Message
-        v-if="getConfig?.notificationBanner"
-        severity="warn"
+  <Message
+    v-if="getConfig?.notificationBanner"
+    severity="warn"
+  >
+    {{ getConfig?.notificationBanner }}
+  </Message>
+
+  <div class="flex flex-wrap">
+    <div class="flex-grow-1">
+      <h1 class="">My files</h1>
+      <h4
+        id="tree_label"
+        class="mb-4"
       >
-        {{ getConfig?.notificationBanner }}
-      </Message>
+        Select a folder to view the files inside it.
+      </h4>
     </div>
-    <div class="flex justify-content-end">
+
+    <div class="flex-none align-items-right">
       <Button
         v-if="usePermissionStore().isUserElevatedRights()"
-        label="Primary"
-        class="p-button-outlined mt-4"
+        v-tooltip.bottom="'Add a new storage location source'"
+        label="Connect Storage"
+        class="my-4 p-button-primary"
+        data-test="connect-storage"
+        aria-label="Add a new storage location source"
         @click="showBucketConfig()"
+        @keyup.enter="showBucketConfig()"
       >
-        <font-awesome-icon icon="fa-solid fa-plus" />
+        <span class="material-icons-outlined mr-2 primary">create_new_folder</span>
         Connect bucket to BC Stats LockBox
       </Button>
+
       <!-- Bucket config dialog -->
       <Dialog
+        id="config_dialog"
         class="bcbox-info-dialog"
         :visible="displayBucketConfig"
         :style="{ width: '50vw' }"
         :modal="true"
+        aria-labelledby="config_dialog_label"
+        aria-describedby="config_dialog_desc"
         @update:visible="closeBucketConfig"
       >
         <template #header>
-          <font-awesome-icon
-            icon="fas fa-cog"
-            fixed-width
-          />
-          <span class="p-dialog-title">{{ BucketConfig.HEADER_NEW_BUCKET }}</span>
+          <span class="material-icons-outlined">settings</span>
+          <span
+            id="config_dialog_label"
+            class="p-dialog-title"
+          >
+            {{ BucketConfig.HEADER_NEW_BUCKET }}
+          </span>
         </template>
 
-        <h3 class="bcbox-info-dialog-subhead">
+        <h3
+          id="config_dialog_label"
+          class="bcbox-info-dialog-subhead"
+        >
           {{ bucketConfigTitle }}
         </h3>
 
@@ -94,33 +116,22 @@ onMounted(async () => {
         />
       </Dialog>
     </div>
-    <div class="flex">
-      <div class="flex-grow-1">
-        <BucketTable
-          @show-sidebar-info="showSidebarInfo"
-          @show-bucket-config="showBucketConfig"
-        />
-      </div>
-      <div
-        v-if="sidebarInfo"
-        class="flex-shrink-0 ml-3"
-        style="max-width: 33%; min-width: 33%"
-      >
-        <BucketSidebar
-          :sidebar-info="sidebarInfo"
-          @close-sidebar-info="closeSidebarInfo"
-        />
-      </div>
+  </div>
+  <div class="flex">
+    <div class="flex-grow-1">
+      <BucketTable
+        @show-sidebar-info="showSidebarInfo"
+        @show-bucket-config="showBucketConfig"
+      />
+    </div>
+    <div
+      v-if="sidebarInfo"
+      class="flex-shrink-0 w-4 pl-4 max-w-28rem"
+    >
+      <BucketSidebar
+        :sidebar-info="sidebarInfo"
+        @close-sidebar-info="closeSidebarInfo"
+      />
     </div>
   </div>
 </template>
-
-<style lang="scss" scoped>
-h1 {
-  font-weight: bold;
-}
-
-button {
-  text-indent: 10px;
-}
-</style>

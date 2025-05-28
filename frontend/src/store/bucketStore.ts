@@ -10,8 +10,8 @@ import type { Ref } from 'vue';
 import type { Bucket, BucketSearchPermissionsOptions } from '@/types';
 
 export type BucketStoreState = {
-  buckets: Ref<Array<Bucket>>
-}
+  buckets: Ref<Array<Bucket>>;
+};
 
 export const useBucketStore = defineStore('bucket', () => {
   const toast = useToast();
@@ -27,6 +27,7 @@ export const useBucketStore = defineStore('bucket', () => {
 
   // Getters
   const getters = {
+    getBucket: computed(() => (id: string) => state.buckets.value.find((bucket) => bucket.bucketId === id)),
     getBuckets: computed(() => state.buckets.value)
   };
 
@@ -36,29 +37,47 @@ export const useBucketStore = defineStore('bucket', () => {
       appStore.beginIndeterminateLoading();
 
       return (await bucketService.createBucket(bucket)).data;
-    }
-    finally {
+    } finally {
       appStore.endIndeterminateLoading();
     }
   }
 
-  async function deleteBucket(bucketId: string) {
+  async function createBucketChild(parentBucketId: string, subKey: string, bucketName: string) {
     try {
       appStore.beginIndeterminateLoading();
-
-      await bucketService.deleteBucket(bucketId);
-    }
-    finally {
+      return await bucketService.createBucketChild(parentBucketId, subKey, bucketName);
+    } finally {
       appStore.endIndeterminateLoading();
     }
   }
 
+  async function deleteBucket(bucketId: string, recursive: boolean) {
+    try {
+      appStore.beginIndeterminateLoading();
+      await bucketService.deleteBucket(bucketId, recursive);
+      toast.success('', 'Folder deleted');
+    } catch (error: any) {
+      toast.error('Unable to delete folder', error.response?.data.detail ?? error, { life: 0 });
+    } finally {
+      appStore.endIndeterminateLoading();
+    }
+  }
+  /**
+   * function does the following in order:
+   * - fetches bucket permissions
+   *   (fetchBucketPermissions() also add bucket permissions to the permission store)
+   * - pass bucketId's of buckets with a permission to searchBuckets()
+   * - add buckets to store (skipping existing matches)
+   * @param params search parameters
+   * @returns an array of matching buckets found
+   */
   async function fetchBuckets(params?: BucketSearchPermissionsOptions) {
     try {
       appStore.beginIndeterminateLoading();
 
       // Get a unique list of bucket IDs the user has access to
       const permResponse = await permissionStore.fetchBucketPermissions(params);
+      // if permissions found
       if (permResponse) {
         const uniqueIds: Array<string> = [
           ...new Set<string>(permResponse.map((x: { bucketId: string }) => x.bucketId))
@@ -67,32 +86,22 @@ export const useBucketStore = defineStore('bucket', () => {
         let response = Array<Bucket>();
         if (uniqueIds.length) {
           response = (await bucketService.searchBuckets({ bucketId: uniqueIds })).data;
-
-          // Remove old values matching search parameters
-          const matches = (x: Bucket) => (
-            (!params?.bucketId || x.bucketId === params.bucketId)
-          );
-
-          const [, difference] = partition(state.buckets.value, matches);
-
-          // Merge and assign
-          state.buckets.value = difference.concat(response);
         }
-        else {
-          state.buckets.value = response;
-        }
-      }
-    }
-    catch (error: any) {
-      toast.error('Fetching buckets', error);
-    }
-    finally {
+
+        // Remove old values matching search parameters
+        const matches = (x: Bucket) => !params?.bucketId || x.bucketId === params.bucketId;
+
+        const [, difference] = partition(state.buckets.value, matches);
+
+        // Merge and assign
+        state.buckets.value = difference.concat(response);
+        return response;
+      } else return [];
+    } catch (error: any) {
+      toast.error('Fetching buckets', error.response?.data.detail ?? error, { life: 0 });
+    } finally {
       appStore.endIndeterminateLoading();
     }
-  }
-
-  function findBucketById(bucketId: string) {
-    return state.buckets.value.find((x) => x.bucketId === bucketId);
   }
 
   async function updateBucket(bucketId: string, bucket: Bucket) {
@@ -100,23 +109,31 @@ export const useBucketStore = defineStore('bucket', () => {
       appStore.beginIndeterminateLoading();
 
       return (await bucketService.updateBucket(bucketId, bucket)).data;
-    }
-    finally {
+    } finally {
       appStore.endIndeterminateLoading();
     }
   }
 
-  async function syncBucket(bucketId: string) {
+  async function syncBucket(bucketId: string, recursive: boolean) {
     try {
       appStore.beginIndeterminateLoading();
+      return await bucketService.syncBucket(bucketId, recursive);
+    } catch (error: any) {
+      throw new Error('Unable to Sync folder');
+    } finally {
+      appStore.endIndeterminateLoading();
+    }
+  }
 
-      await bucketService.syncBucket(bucketId);
-      toast.success('', 'Sync is in queue and will begin soon');
-    }
-    catch (error: any) {
-      toast.error('Unable to sync', error);
-    }
-    finally {
+
+  async function syncBucketStatus(bucketId: string) {
+    try {
+      appStore.beginIndeterminateLoading();
+      const response = await bucketService.syncBucketStatus({ bucketId });
+      return response.data;
+    } catch (error: any) {
+      toast.error('Unable to get sync status', error.response?.data.detail ?? error, { life: 0 });
+    } finally {
       appStore.endIndeterminateLoading();
     }
   }
@@ -130,10 +147,11 @@ export const useBucketStore = defineStore('bucket', () => {
 
     // Actions
     createBucket,
+    createBucketChild,
     deleteBucket,
     fetchBuckets,
-    findBucketById,
     syncBucket,
+    syncBucketStatus,
     updateBucket
   };
 });

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { onMounted, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 
 import GridRow from '@/components/form/GridRow.vue';
 import { ObjectMetadataTagForm } from '@/components/object';
@@ -10,37 +10,39 @@ import { Permissions } from '@/utils/constants';
 
 import type { Ref } from 'vue';
 import type { ObjectMetadataTagFormType } from '@/components/object/ObjectMetadataTagForm.vue';
-import type { Metadata } from '@/types';
 
 // Props
 type Props = {
   editable?: boolean;
   objectId: string;
-  versionId?: string;
 };
 
 const props = withDefaults(defineProps<Props>(), {
-  editable: true,
-  versionId: undefined
+  editable: true
 });
-
-// Emits
-const emit = defineEmits(['on-file-uploaded']);
 
 // Store
 const metadataStore = useMetadataStore();
 const versionStore = useVersionStore();
+const objectStore = useObjectStore();
 const permissionStore = usePermissionStore();
 const { getUserId } = storeToRefs(useAuthStore());
-const { getMetadata: tsGetMetadata } = storeToRefs(metadataStore);
-const { getMetadata: vsGetMetadata } = storeToRefs(versionStore);
+const { getMetadataByVersionId } = storeToRefs(versionStore);
+const { getMetadataByObjectId } = storeToRefs(metadataStore);
 
 // State
+const obj = computed(() => objectStore.getObject(props.objectId));
+const versionId = defineModel<string>('versionId');
+const metadata  = computed(() => (versionId.value ?
+  getMetadataByVersionId.value(versionId.value) :
+  getMetadataByObjectId.value(props.objectId))?.metadata ?? []);
 const editing: Ref<boolean> = ref(false);
 const formData: Ref<ObjectMetadataTagFormType> = ref({
   filename: ''
 });
-const objectMetadata: Ref<Metadata | undefined> = ref(undefined);
+
+// Emits
+const emit = defineEmits(['on-metadata-success']);
 
 // Actions
 const confirm = useConfirm();
@@ -56,58 +58,42 @@ const confirmUpdate = (values: ObjectMetadataTagFormType) => {
 };
 
 const showModal = () => {
-  formData.value.filename = useObjectStore().findObjectById(props.objectId)?.name ?? '';
-  formData.value.metadata = objectMetadata.value?.metadata;
+  formData.value.filename = obj.value?.name ?? '';
+  formData.value.metadata = metadata.value;
 
   editing.value = true;
 };
 
 const submitModal = async (values: ObjectMetadataTagFormType) => {
-  await metadataStore.replaceMetadata(props.objectId, values.metadata ?? [], props.versionId);
-  emit('on-file-uploaded');
-
+  const newVersion = await metadataStore.replaceMetadata(props.objectId, values.metadata ?? [], versionId.value);
+  emit('on-metadata-success', newVersion);
   closeModal();
 };
 
 const closeModal = () => {
   editing.value = false;
 };
-
-async function load() {
-  if( props.versionId ) {
-    objectMetadata.value = versionStore.findMetadataByVersionId(props.versionId);
-  }
-  else {
-    objectMetadata.value = metadataStore.findMetadataByObjectId(props.objectId);
-  }
-}
-
-onMounted(() => {
-  load();
-});
-
-watch([props, tsGetMetadata,vsGetMetadata] , () => {
-  load();
-});
 </script>
 
 <template>
   <div class="grid details-grid grid-nogutter mb-2">
-    <div class="col-12">
-      <h2 class="font-bold">
-        Metadata
-      </h2>
+    <div
+      v-if="metadata.length > 0 "
+      class="col-12"
+    >
+      <h2>Metadata</h2>
     </div>
     <GridRow
-      v-for="meta in objectMetadata?.metadata"
+      v-for="meta in metadata"
       :key="meta.key + meta.value"
       :label="meta.key"
       :value="meta.value"
     />
   </div>
   <div
-    v-if="editable &&
-      permissionStore.isObjectActionAllowed(props.objectId, getUserId, Permissions.UPDATE, props.objectId)"
+    v-if="
+      editable && permissionStore.isObjectActionAllowed(props.objectId, getUserId, Permissions.UPDATE, obj?.bucketId)
+    "
   >
     <Button
       outlined
@@ -121,14 +107,12 @@ watch([props, tsGetMetadata,vsGetMetadata] , () => {
     </Button>
   </div>
 
-  <!-- eslint-disable vue/no-v-model-argument -->
   <Dialog
     v-model:visible="editing"
     :draggable="false"
     :modal="true"
-    class="bcbox-info-dialog permissions-modal"
+    class="bcbox-info-dialog"
   >
-    <!-- eslint-enable vue/no-v-model-argument -->
     <template #header>
       <font-awesome-icon
         icon="fa-solid fa-pen-to-square"

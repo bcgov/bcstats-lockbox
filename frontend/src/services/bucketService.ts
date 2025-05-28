@@ -26,14 +26,30 @@ export default {
   },
 
   /**
+   * @function createBucketChild
+   * Creates a bucket
+   * @param {string} parentBucketId ID of parent COMS 'bucket'
+   * @param {string} subKey 'sub-folder' name (last part of the key)
+   * @param {string} bucketName Display name for the mapped sub-folder
+   * @returns {Promise} An axios response
+   */
+  createBucketChild(parentBucketId: string, subKey: string, bucketName: string) {
+    return comsAxios().put(`${BUCKET_PATH}/${parentBucketId}/child`, { subKey, bucketName });
+  },
+
+  /**
    * @function deleteBucket
-   * Deletes a bucket
-   * This is a COMS DB delete only. The S3 bucket remains intact
+   * Deletes a bucket and optionally sub-folders
+   * This is a COMS DB delete only. The S3 bucket(s) remains intact
    * @param {string} bucketId Bucket ID for the bucket to delete
    * @returns {Promise} An axios response
    */
-  deleteBucket(bucketId: string) {
-    return comsAxios().delete(`${BUCKET_PATH}/${bucketId}`);
+  deleteBucket(bucketId: string, recursive: boolean ) {
+    return comsAxios().delete(`${BUCKET_PATH}/${bucketId}`, {
+      params: {
+        recursive: recursive,
+      }
+    });
   },
 
   /**
@@ -52,7 +68,22 @@ export default {
    * @param {string} bucketId Bucket ID for the bucket to synchronize
    * @returns {Promise} An axios response
    */
-  syncBucket(bucketId: string) {
-    return comsAxios().get(`${BUCKET_PATH}/${bucketId}/sync`);
+  syncBucket(bucketId: string, recursive: boolean ) {
+    return comsAxios().get(`${BUCKET_PATH}/${bucketId}/sync`, {
+      params: {
+        recursive: recursive,
+      }
+    });
+  },
+
+  /**
+   * @function syncBucketStatus
+   * get sync status for a folder
+   * returns the number of objects in the given folder that remain in the COMS sync queue
+   * @param {string} bucketId Bucket ID (folder)
+   * @returns {Promise} An axios response
+   */
+  syncBucketStatus(params: { bucketId: string } ) {
+    return comsAxios().get('sync/status', { params: params });
   }
 };

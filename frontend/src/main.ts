@@ -13,6 +13,7 @@ import App from '@/App.vue';
 import getRouter from '@/router';
 import { AuthService, ConfigService } from '@/services';
 
+import 'material-icons/iconfont/material-icons.css';
 import '@bcgov/bc-sans/css/BCSans.css';
 import 'primevue/resources/themes/saga-blue/theme.css';
 import 'primevue/resources/primevue.min.css';
@@ -29,9 +30,11 @@ function initializeApp(): void {
 
   const app = createApp(App);
   const pinia = createPinia();
-  pinia.use(createPersistedState({
-    key: id => `bcbox.${id}`
-  }));
+  pinia.use(
+    createPersistedState({
+      key: (id) => `bcbox.${id}`
+    })
+  );
 
   app.use(pinia);
   app.use(getRouter());

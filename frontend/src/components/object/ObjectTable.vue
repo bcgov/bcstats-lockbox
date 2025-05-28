@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { ref, watch } from 'vue';
+import { onUnmounted, onMounted, ref } from 'vue';
 
 import { Spinner } from '@/components/layout';
 import {
@@ -8,15 +8,16 @@ import {
   DownloadObjectButton,
   ObjectFilters,
   ObjectPermission,
+  ObjectPublicToggle
 } from '@/components/object';
-//import { SyncButton } from '@/components/common';
-import { ShareObjectButton } from '@/components/object/share';
-//import { Button, Column, DataTable, Dialog, FilterMatchMode, InputText, InputSwitch, useToast } from '@/lib/primevue';
-import { Button, Column, DataTable, Dialog, FilterMatchMode, InputText, useToast } from '@/lib/primevue';
-import { useAuthStore, useAppStore, useObjectStore, usePermissionStore } from '@/store';
-import { Permissions } from '@/utils/constants';
+import { SyncButton, ShareButton } from '@/components/common';
+import { Button, Column, DataTable, Dialog, InputText } from '@/lib/primevue';
+import { useAuthStore, useObjectStore, useNavStore, usePermissionStore } from '@/store';
+import { Permissions, RouteNames } from '@/utils/constants';
+import { onDialogHide } from '@/utils/utils';
 import { ButtonMode } from '@/utils/enums';
 import { formatDateLong } from '@/utils/formatters';
+import { objectService } from '@/services';
 
 import type { Ref } from 'vue';
 import type { COMSObject } from '@/types';
@@ -25,6 +26,13 @@ type COMSObjectDataSource = {
   lastUpdatedDate?: string;
 } & COMSObject;
 
+type DataTableObjectSource = {
+  [key: string]: any;
+};
+
+type DataTableFilter = {
+  [key: string]: { value: any; matchMode: string };
+};
 // Props
 type Props = {
   bucketId?: string;
@@ -42,25 +50,34 @@ const emit = defineEmits(['show-object-info']);
 // Store
 const objectStore = useObjectStore();
 const permissionStore = usePermissionStore();
-const { getObjects } = storeToRefs(objectStore);
 const { getUserId } = storeToRefs(useAuthStore());
+const { focusedElement } = storeToRefs(useNavStore());
 
 // State
 const permissionsVisible = ref(false);
 const permissionsObjectId = ref('');
 const permissionsObjectName: Ref<string | undefined> = ref('');
-const selectedObjects: Ref<Array<COMSObject>> = ref([]);
 const tableData: Ref<Array<COMSObjectDataSource>> = ref([]);
+const lazyDataTable = ref();
+const loading: Ref<boolean> = ref(false);
+const lazyParams: Ref<DataTableObjectSource> = ref({});
+const totalRecords: Ref<number> = ref(0);
+const first: Ref<number> = ref(0);
+const filters: Ref<DataTableFilter> = ref({
+  name: { value: undefined, matchMode: 'contains' },
+  tags: { value: undefined, matchMode: 'contains' },
+  meta: { value: undefined, matchMode: 'contains' }
+});
 
 // Actions
-const toast = useToast();
-
-const formatShortUuid = (uuid: string) => {
-  return uuid?.slice(0,8) ?? uuid;
+const formatShortUuid = (uuid: string) => uuid?.slice(0, 8) ?? uuid;
+const onObjectDeleted = () => {
+  loadLazyData();
 };
 
-const showInfo = async (id: string) => {
+const showInfo = (id: string) => {
   emit('show-object-info', id);
+  focusedElement.value = document.activeElement;
 };
 
 /*const showPermissions = async (objectId: string) => {
@@ -68,92 +85,174 @@ const showInfo = async (id: string) => {
 
   permissionsVisible.value = true;
   permissionsObjectId.value = objectId;
-  permissionsObjectName.value = objectStore.findObjectById(objectId)?.name;
-};*/
-
-/*const togglePublic = async (objectId: string, isPublic: boolean) => {
-  await objectStore.togglePublic(objectId, isPublic);
-};*/
-
-function onDeletedSuccess() {
-  toast.success('File deleted');
+  permissionsObjectName.value = objectStore.getObject(objectId)?.name;
+  focusedElement.value = document.activeElement;
 }
 
-watch( getObjects, async () => {
-  // Filter object cache to this specific bucket
-  const objs: Array<COMSObjectDataSource> = getObjects.value
-    .filter( (x: COMSObject) => x.bucketId === props.bucketId ) as COMSObjectDataSource[];
-
-  tableData.value = objs.map( (x: COMSObjectDataSource) => {
-    x.lastUpdatedDate = x.updatedAt ?? x.createdAt;
-    return x;
-  });
+onMounted(() => {
+  loading.value = true;
+  lazyParams.value = {
+    first: 0,
+    rows: lazyDataTable.value.rows,
+    sortField: 'updatedAt',
+    page: lazyDataTable.value.page,
+    sortOrder: 'desc',
+    filters: filters
+  };
+  loadLazyData();
 });
 
-watch( selectedObjects, () => {
-  objectStore.setSelectedObjects(selectedObjects.value);
+const loadLazyData = (event?: any) => {
+  lazyParams.value = { ...lazyParams.value, first: event?.first || first.value, page: event?.page || 0 };
+  objectService
+    .searchObjects(
+      {
+        bucketId: props.bucketId ? [props.bucketId] : undefined,
+        deleteMarker: false,
+        latest: true,
+        page: lazyParams.value?.page ? ++lazyParams.value.page : 1,
+        name: lazyParams.value?.filters?.name.value ? lazyParams.value?.filters?.name.value : undefined,
+        limit: lazyParams.value.rows,
+        sort: lazyParams.value.sortField,
+        order: lazyParams.value.sortOrder === 1 ? 'asc' : 'desc',
+        tagset: lazyParams.value?.filters?.tags.value
+      },
+      lazyParams.value?.filters?.meta.value //Header
+    )
+    .then((r: any) => {
+      tableData.value = r.data.map((item: any) => ({
+        ...item,
+        updatedAt: item.updatedAt === null ? item.createdAt : item.updatedAt
+      }));
+      totalRecords.value = +r?.headers['x-total-rows'];
+      // add objects to store
+      objectStore.setObjects(r.data);
+      loading.value = false;
+      return r.data;
+    })
+    // add object permissions to store
+    .then((objects: Array<COMSObjectDataSource>) => {
+      if (objects.length > 0) {
+        permissionStore.fetchObjectPermissions({ objectId: objects.map((o: COMSObject) => o.id) });
+      }
+    });
+};
+
+const onPage = (event?: any) => {
+  lazyParams.value = event;
+  loadLazyData(event);
+};
+
+const onSort = (event?: any) => {
+  lazyParams.value = event;
+  loadLazyData(event);
+};
+
+const onFilter = (event?: any) => {
+  lazyParams.value.filters = filters;
+  // Seems to be a bug as current page is not being reset when filter trigger
+  lazyDataTable.value.resetPage();
+  loadLazyData(event);
+};
+
+// Clear selections when navigating away
+onUnmounted(() => {
+  objectStore.setSelectedObjects([]);
 });
 
-// Datatable filter(s)
-const filters = ref({
-  // Need this till PrimeVue gets it together to un-break this again
-  // TODO: Revisit with PrimeVue 2.37+
-  // @ts-ignore
-  global: { value: null, matchMode: FilterMatchMode.CONTAINS }
-});
+const selectedFilters = (payload: any) => {
+  filters.value.meta.value = payload.metaToSearch
+    .flatMap((o: any) => ({ [o.key]: o.value }))
+    .reduce((r: any, c: any) => {
+      const key = Object.keys(c)[0];
+      const value = c[key];
+      r['x-amz-meta-' + key] = value;
+      return r;
+    }, {});
+  filters.value.tags.value = payload.tagSetToSearch
+    .flatMap((o: any) => ({ [o.key]: o.value }))
+    .reduce((r: any, c: any) => {
+      const key = Object.keys(c)[0];
+      const value = c[key];
+      r[key] = value;
+      return r;
+    }, {});
+  lazyParams.value.filters = filters;
+  loadLazyData();
+};
 </script>
 
 <template>
-  <div>
+  <div class="object-table">
     <DataTable
-      v-model:selection="selectedObjects"
+      ref="lazyDataTable"
+      v-model:value="tableData"
+      v-model:selection="objectStore.selectedObjects"
       v-model:filters="filters"
-      :loading="useAppStore().getIsLoading"
-      :value="tableData"
+      lazy
+      paginator
+      :loading="loading"
+      :total-records="totalRecords"
       data-key="id"
       class="p-datatable-sm"
       responsive-layout="scroll"
-      :paginator="true"
       :rows="10"
-      paginator-template="RowsPerPageDropdown CurrentPageReport FirstPageLink 
-        PrevPageLink JumpToPageDropdown NextPageLink LastPageLink "
-      current-page-report-template="{first}-{last} of {totalRecords}"
       :rows-per-page-options="[10, 20, 50]"
-      sort-field="name"
-      :sort-order="1"
+      sort-field="updatedAt"
+      :sort-order="-1"
       :global-filter-fields="['name']"
+      :first="first"
+      update:filters
+      update:page
+      @page="onPage($event)"
+      @sort="onSort($event)"
+      @filter="onFilter($event)"
     >
       <template #header>
         <div class="flex justify-content-end">
-          <ObjectFilters :bucket-id="props.bucketId" />
+          <ObjectFilters
+            :bucket-id="props.bucketId"
+            @selected-filters="selectedFilters"
+          />
 
-          <span class="p-input-icon-left ml-4">
-            <i class="pi pi-search" />
+          <span class="ml-4">
             <InputText
-              v-model="filters['global'].value"
+              v-model="filters.name.value"
+              class="pr-6"
               placeholder="Search File Names"
+              @keyup.enter="loadLazyData"
+            />
+            <Button
+              v-show="filters.name.value"
+              v-tooltip.bottom="'Clear'"
+              class="overlap"
+              icon="pi pi-times"
+              outlined
+              aria-label="Clear"
+              @click="
+                () => {
+                  filters.name.value = undefined;
+                }
+              "
             />
           </span>
-
           <Button
-            v-tooltip.bottom="'Refresh'"
+            v-tooltip.bottom="'Search'"
             class="ml-2"
-            icon="pi pi-refresh"
+            icon="pi pi-search"
             outlined
             rounded
             aria-label="Filter"
-            @click="objectStore.fetchObjects({ bucketId: props.bucketId, userId: getUserId, bucketPerms: true })"
+            @click="onFilter()"
           />
         </div>
       </template>
       <template #empty>
         <div
-          v-if="!useAppStore().getIsLoading"
+          v-if="!loading"
           class="flex justify-content-center"
         >
-          <h3>
-            There are no objects associated with your account in this bucket.
-          </h3>
+          <h4 class="py-5">There are no files associated with your account in this folder.</h4>
         </div>
       </template>
       <template #loading>
@@ -165,72 +264,80 @@ const filters = ref({
       />
       <Column
         field="name"
-        :sortable="true"
+        sortable
         header="Name"
-        header-style="width: 25%"
+        header-style="min-width: 25%"
         body-class="truncate"
       >
         <template #body="{ data }">
-          <div
-            v-tooltip.bottom="{ value: data.name }"
-          >
-            {{ data.name }}
+          <div>
+            <router-link :to="{ name: RouteNames.DETAIL_OBJECTS, query: { objectId: data.id } }">
+              <span v-tooltip.bottom="'View file details'">
+                {{ data.name }}
+              </span>
+            </router-link>
           </div>
         </template>
       </Column>
       <Column
         field="id"
-        :sortable="true"
+        sortable
         header="Object ID"
+        style="width: 150px"
       >
         <template #body="{ data }">
           <div
             v-tooltip.bottom="{ value: data.id }"
+            :data-objectId="data.id"
           >
             {{ formatShortUuid(data.id) }}
           </div>
         </template>
       </Column>
       <Column
-        field="lastUpdatedDate"
+        field="updatedAt"
         header="Updated date"
-        :sortable="true"
-        :hidden="props.objectInfoId ? true : false"
+        style="width: 300px"
+        sortable
       >
         <template #body="{ data }">
-          {{ formatDateLong(data.lastUpdatedDate) }}
+          {{ formatDateLong(data.lastModifiedDate ?? data.createdAt) }}
         </template>
       </Column>
       <!-- Disable public sharing
       <Column
         field="publicSharing"
         header="Public"
+        style="width: 100px"
       >
         <template #body="{ data }">
-          <InputSwitch
-            v-model="data.public"
-            :disabled="!(
-              usePermissionStore().isUserElevatedRights() &&
-              permissionStore.isObjectActionAllowed(
-                data.id, getUserId, Permissions.MANAGE, props.bucketId as string))"
-            @change="togglePublic(data.id, data.public)"
+          <ObjectPublicToggle
+            v-if="props.bucketId && getUserId"
+            :bucket-id="props.bucketId"
+            :object-id="data.id"
+            :object-name="data.name"
+            :object-public="data.public"
+            :user-id="getUserId"
           />
         </template>
       </Column>
       -->
       <Column
         header="Actions"
-        header-style="width: 250px"
+        header-style="min-width: 270px"
         header-class="header-right"
-        body-class="content-right action-buttons"
+        body-class="action-buttons"
       >
         <template #body="{ data }">
-          <ShareObjectButton
-            :id="data.id"
+          <ShareButton
+            :object-id="data.id"
+            label-text="File"
           />
           <DownloadObjectButton
-            v-if="data.public || permissionStore.isObjectActionAllowed(
-              data.id, getUserId, Permissions.READ, props.bucketId as string)"
+            v-if="
+              data.public ||
+              permissionStore.isObjectActionAllowed(data.id, getUserId, Permissions.READ, props.bucketId as string)
+            "
             :mode="ButtonMode.ICON"
             :ids="[data.id]"
           />
@@ -239,26 +346,36 @@ const filters = ref({
               data.id, getUserId, Permissions.MANAGE, props.bucketId as string)"
             v-tooltip.bottom="'File Permissions'"
             class="p-button-lg p-button-text"
+            aria-label="File permissions"
             @click="showPermissions(data.id)"
           >
-            <font-awesome-icon icon="fa-solid fa-users" />
-          </Button>-->
-          <!--<SyncButton :object-id="data.id" />-->
+            <span class="material-icons-outlined">supervisor_account</span>
+          </Button>
+          <SyncButton
+            label-text="Synchronize file"
+            :object-id="data.id"
+            :mode="ButtonMode.ICON"
+          />
           <Button
-            v-if="data.public || permissionStore.isObjectActionAllowed(
-              data.id, getUserId, Permissions.READ, props.bucketId as string)"
-            v-tooltip.bottom="'File Details'"
+            v-if="
+              data.public ||
+              permissionStore.isObjectActionAllowed(data.id, getUserId, Permissions.READ, props.bucketId as string)
+            "
+            v-tooltip.bottom="'File details'"
             class="p-button-lg p-button-rounded p-button-text"
+            aria-label="File details"
             @click="showInfo(data.id)"
           >
-            <font-awesome-icon icon="fa-solid fa-circle-info" />
-          </Button>
+          <span class="material-icons-outlined">info</span>
+        </Button>
           <DeleteObjectButton
-            v-if="permissionStore.isObjectActionAllowed(
-              data.id, getUserId, Permissions.DELETE, props.bucketId as string)"
+            v-if="
+              permissionStore.isObjectActionAllowed(data.id, getUserId, Permissions.DELETE, props.bucketId as string)
+            "
             :mode="ButtonMode.ICON"
+            :hard-delete="false"
             :ids="[data.id]"
-            @on-deleted-success="onDeletedSuccess"
+            @on-object-deleted="onObjectDeleted"
           />
         </template>
       </Column>
@@ -266,21 +383,30 @@ const filters = ref({
 
     <!-- eslint-disable vue/no-v-model-argument -->
     <Dialog
+      id="permissions_dialog"
       v-model:visible="permissionsVisible"
       :draggable="false"
       :modal="true"
-      class="bcbox-info-dialog permissions-modal"
+      class="bcbox-info-dialog"
+      aria-labelledby="permissions_label"
+      aria-describedby="permissions_desc"
+      @after-hide="onDialogHide"
     >
       <!-- eslint-enable vue/no-v-model-argument -->
       <template #header>
-        <font-awesome-icon
-          icon="fas fa-users"
-          fixed-width
-        />
-        <span class="p-dialog-title">Object Permissions</span>
+        <span class="material-icons-outlined">supervisor_account</span>
+        <span
+          id="permissions_label"
+          class="p-dialog-title"
+        >
+          File Permissions
+        </span>
       </template>
 
-      <h3 class="bcbox-info-dialog-subhead">
+      <h3
+        id="permissions_desc"
+        class="bcbox-info-dialog-subhead"
+      >
         {{ permissionsObjectName }}
       </h3>
 
@@ -288,3 +414,11 @@ const filters = ref({
     </Dialog>
   </div>
 </template>
+<style lang="scss" scoped>
+.overlap {
+  position: absolute;
+  right: 3.4rem;
+  width: 2.5rem;
+  height: 2.4rem;
+}
+</style>

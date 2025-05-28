@@ -30,7 +30,9 @@ const version: Version = {
   mimeType: 'image/jpg',
   objectId: '000',
   s3VersionId: 's3123',
-  createdAt: '2023-05-01T22:18:12.553Z'
+  isLatest: true,
+  createdAt: '2023-05-01T22:18:12.553Z',
+  lastModifiedDate: '2023-05-01T22:18:12.553Z'
 };
 
 const versionOld: Version = {
@@ -39,7 +41,9 @@ const versionOld: Version = {
   mimeType: 'image/jpg',
   objectId: '000',
   s3VersionId: 's2000',
-  createdAt: '2022-05-01T18:25:42.462Z'
+  isLatest: false,
+  createdAt: '2022-05-01T18:25:42.462Z',
+  lastModifiedDate: '2023-05-01T22:18:12.553Z'
 };
 
 const mockToast = vi.fn();
@@ -56,7 +60,6 @@ afterEach(() => {
 });
 
 describe('Version Store', () => {
-
   let appStore: StoreGeneric;
   let versionStore: StoreGeneric;
 
@@ -103,12 +106,11 @@ describe('Version Store', () => {
       expect(getMetadataSpy).toHaveBeenCalledTimes(1);
       expect(getMetadataSpy).toHaveBeenCalledWith(null, { versionId: '000' });
       expect(mockToast).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledWith('Fetching metadata', new Error);
+      expect(mockToast).toHaveBeenCalledWith('Fetching metadata', new Error(), { life: 0 });
       expect(endIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
       expect(versionStore.getMetadata).toStrictEqual([]);
     });
   });
-
 
   describe('fetchTagging', () => {
     it('fetches the tags', async () => {
@@ -134,12 +136,11 @@ describe('Version Store', () => {
       expect(getTaggingSpy).toHaveBeenCalledTimes(1);
       expect(getTaggingSpy).toHaveBeenCalledWith({ versionId: '000' });
       expect(mockToast).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledWith('Fetching tags', new Error);
+      expect(mockToast).toHaveBeenCalledWith('Fetching tags', new Error(), { life: 0 });
       expect(endIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
       expect(versionStore.getTagging).toStrictEqual([]);
     });
   });
-
 
   describe('fetchVersions', () => {
     it('fetches the versions', async () => {
@@ -164,19 +165,17 @@ describe('Version Store', () => {
       expect(beginIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
       expect(getVersionsSpy).toHaveBeenCalledTimes(1);
       expect(getVersionsSpy).toHaveBeenCalledWith('000');
-      expect(mockToast).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledWith('Fetching versions', new Error);
+      expect(mockToast).toHaveBeenCalledTimes(0);
       expect(endIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
       expect(versionStore.getTagging).toStrictEqual([]);
     });
   });
 
-
-  describe('findLatestVersionIdByObjectId', () => {
+  describe('getLatestVersionIdByObjectId', () => {
     it('returns latest version', async () => {
       versionStore.versions = [versionOld, version];
 
-      const result = versionStore.findLatestVersionIdByObjectId('000');
+      const result = versionStore.getLatestVersionIdByObjectId('000');
 
       expect(result).toStrictEqual('123');
     });
@@ -184,18 +183,17 @@ describe('Version Store', () => {
     it('returns undefined when no matches found', async () => {
       versionStore.versions = [versionOld, version];
 
-      const result = versionStore.findLatestVersionIdByObjectId('111');
+      const result = versionStore.getLatestVersionIdByObjectId('111');
 
       expect(result).toStrictEqual(undefined);
     });
   });
 
-
-  describe('findMetadataByVersionId', () => {
+  describe('getMetadataByVersionId', () => {
     it('returns matching metadata', async () => {
       versionStore.metadata = [meta];
 
-      const result = versionStore.findMetadataByVersionId('000');
+      const result = versionStore.getMetadataByVersionId('000');
 
       expect(result).toStrictEqual(meta);
     });
@@ -203,12 +201,11 @@ describe('Version Store', () => {
     it('returns undefined when no match found', async () => {
       versionStore.metadata = [meta];
 
-      const result = versionStore.findMetadataByVersionId('111');
+      const result = versionStore.getMetadataByVersionId('111');
 
       expect(result).toStrictEqual(undefined);
     });
   });
-
 
   describe('findMetadataValue', () => {
     it('returns matching metadata', async () => {
@@ -228,31 +225,11 @@ describe('Version Store', () => {
     });
   });
 
-
-  describe('findTaggingByVersionId', () => {
-    it('returns matching metadata', async () => {
-      versionStore.tagging = [tag];
-
-      const result = versionStore.findTaggingByVersionId('000');
-
-      expect(result).toStrictEqual(tag);
-    });
-
-    it('returns undefined when no match found', async () => {
-      versionStore.tagging = [tag];
-
-      const result = versionStore.findTaggingByVersionId('111');
-
-      expect(result).toStrictEqual(undefined);
-    });
-  });
-
-
-  describe('findVersionById', () => {
+  describe('getVersion', () => {
     it('returns matching version', async () => {
       versionStore.versions = [version];
 
-      const result = versionStore.findVersionById('123');
+      const result = versionStore.getVersion('123');
 
       expect(result).toStrictEqual(version);
     });
@@ -260,18 +237,17 @@ describe('Version Store', () => {
     it('returns undefined when no match found', async () => {
       versionStore.versions = [version];
 
-      const result = versionStore.findVersionById('100');
+      const result = versionStore.getVersion('100');
 
       expect(result).toStrictEqual(undefined);
     });
   });
 
-
-  describe('findVersionsByObjectId', () => {
+  describe('getVersionsByObjectId', () => {
     it('returns matching versions', async () => {
       versionStore.versions = [version];
 
-      const result = versionStore.findVersionsByObjectId('000');
+      const result = versionStore.getVersionsByObjectId('000');
 
       expect(result).toStrictEqual([version]);
     });
@@ -279,7 +255,7 @@ describe('Version Store', () => {
     it('returns empty array when no matches found', async () => {
       versionStore.versions = [version];
 
-      const result = versionStore.findVersionsByObjectId('999');
+      const result = versionStore.getVersionsByObjectId('999');
 
       expect(result).toStrictEqual([]);
     });

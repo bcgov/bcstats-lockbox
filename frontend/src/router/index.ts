@@ -12,7 +12,7 @@ import type { RouteRecordRaw } from 'vue-router';
  * @param {object} route The route object
  * @returns {object} a Vue props object
  */
-function createProps(route: { query: any; params: any; }): object {
+function createProps(route: { query: any; params: any }): object {
   return { ...route.query, ...route.params };
 }
 
@@ -50,7 +50,7 @@ const routes: Array<RouteRecordRaw> = [
         path: 'buckets',
         name: RouteNames.LIST_BUCKETS,
         component: () => import('@/views/list/ListBucketsView.vue'),
-        meta: { requiresAuth: true, breadcrumb: 'Buckets', title: 'My Buckets' },
+        meta: { requiresAuth: true, breadcrumb: 'Buckets', title: 'My files' },
         props: createProps
       },
       {
@@ -58,9 +58,23 @@ const routes: Array<RouteRecordRaw> = [
         name: RouteNames.LIST_OBJECTS,
         component: () => import('@/views/list/ListObjectsView.vue'),
         meta: { requiresAuth: true, breadcrumb: '__listObjectsDynamic', title: 'My Objects' },
+        props: createProps,
+      },
+      {
+        path: 'deleted',
+        name: RouteNames.LIST_OBJECTS_DELETED,
+        component: () => import('@/views/list/ListDeletedObjectsView.vue'),
+        meta: { requiresAuth: true, breadcrumb: '__listDeletedObjectsDynamic', title: 'My Deleted Objects' },
         props: createProps
       }
     ]
+  },
+  {
+    path: '/invite/:token',
+    name: RouteNames.INVITE,
+    component: () => import('@/views/invite/InviteView.vue'),
+    meta: { requiresAuth: true, breadcrumb: 'Invite', title: 'Invite' },
+    props: createProps
   },
   {
     path: '/oidc',
@@ -87,7 +101,7 @@ const routes: Array<RouteRecordRaw> = [
         name: RouteNames.LOGOUT,
         component: () => import('@/views/oidc/OidcLogoutView.vue'),
         meta: { title: 'Logging out...' }
-      },
+      }
     ]
   },
   {
@@ -119,8 +133,11 @@ export default function getRouter() {
 
     // Uploading navigation guard
     if (appStore.getIsUploading) {
-      if (!confirm('Navigation may cancel upload(s) in progress. ' +
-        'Please confirm you want to navigate from current page.')) {
+      if (
+        !confirm(
+          'Navigation may cancel upload(s) in progress. ' + 'Please confirm you want to navigate from current page.'
+        )
+      ) {
         return false;
       }
     }
@@ -128,7 +145,7 @@ export default function getRouter() {
     // Backend Redirection Handler
     if (to.query?.r) {
       router.replace({
-        path: (to.query.r) ? to.query.r.toString() : to.path,
+        path: to.query.r ? to.query.r.toString() : to.path,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
         query: (({ r, ...q }) => q)(to.query)
       });

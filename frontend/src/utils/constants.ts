@@ -19,7 +19,15 @@ export const Permissions = Object.freeze({
   READ: 'READ',
   UPDATE: 'UPDATE',
   DELETE: 'DELETE',
-  MANAGE: 'MANAGE',
+  MANAGE: 'MANAGE'
+});
+
+export const Permissionlabels = Object.freeze({
+  CREATE: 'Upload',
+  READ: 'Read',
+  UPDATE: 'Update',
+  DELETE: 'Delete',
+  MANAGE: 'manage'
 });
 
 export const Regex = Object.freeze({
@@ -35,8 +43,10 @@ export const RouteNames = Object.freeze({
   DEVELOPER: 'developer',
   FORBIDDEN: 'forbidden',
   HOME: 'home',
+  INVITE: 'invite',
   LIST_BUCKETS: 'listBuckets',
   LIST_OBJECTS: 'listObjects',
+  LIST_OBJECTS_DELETED: 'listObjectsDeleted',
   LOGIN: 'login',
   LOGOUT: 'logout'
 });
@@ -59,5 +69,5 @@ export const ToastTimeout = Object.freeze({
 });
 
 export const ValidationMessages = Object.freeze({
-  REQUIRED: 'This field is required.',
+  REQUIRED: 'This field is required.'
 });

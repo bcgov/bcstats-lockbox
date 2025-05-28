@@ -5,9 +5,12 @@ import { object, string } from 'yup';
 
 import Password from '@/components/form/Password.vue';
 import TextInput from '@/components/form/TextInput.vue';
+import { SyncButton } from '@/components/common';
+
 import { Button, useToast } from '@/lib/primevue';
 import { useAuthStore, useBucketStore } from '@/store';
-import { differential, joinPath } from '@/utils/utils';
+import { ButtonMode } from '@/utils/enums';
+import { differential, getBucketPath, joinPath } from '@/utils/utils';
 
 import type { Bucket } from '@/types';
 
@@ -46,9 +49,14 @@ const initialValues: BucketForm = {
 
 // Form validation schema
 const schema = object({
-  bucketName: string().max(255).required().label('Bucket name'),
-  key: string().matches(/^[^\\]+$/, 'Sub-path must not contain backslashes').required().max(255).label('Sub-path'),
-  adminPass: string().max(255).required().label('Admin Password')
+  accessKeyId: string().max(255).required().label('Access Key ID'),
+  bucket: string().max(255).required().label('Bucket'),
+  bucketName: string().max(255).required().label('Folder name'),
+  endpoint: string().max(255).required().label('Endpoint'),
+  key: string()
+    .matches(/^[^\\]+$/, { excludeEmptyString: true, message: 'Path must not contain backslashes' })
+    .max(255),
+  secretAccessKey: string().max(255).required().label('Secret Access Key')
 });
 
 // Actions
@@ -58,24 +66,50 @@ const onSubmit = async (values: any) => {
   try {
     const formBucket = {
       bucketName: values.bucketName,
-      adminPass: values.adminPass,
+      endpoint: values.endpoint,
+      secretAccessKey: values.secretAccessKey
     } as Bucket;
 
     // Only add key for new configurations
-    if( !props.bucket && values.key && joinPath(values.key)) {
+    if (!props.bucket && values.key && joinPath(values.key)) {
       formBucket.key = joinPath(values.key);
     }
 
-    props.bucket ?
-      await bucketStore.updateBucket(props.bucket?.bucketId, differential(formBucket, initialValues)) :
-      await bucketStore.createBucket(formBucket);
+    const bucketChanges = differential(formBucket, initialValues);
 
-    await bucketStore.fetchBuckets({ userId: getUserId.value, objectPerms: true });
+    const bucketModel = props.bucket
+      ? await bucketStore.updateBucket(props.bucket?.bucketId, bucketChanges)
+      : await bucketStore.createBucket(formBucket);
+
     emit('submit-bucket-config');
+    toast.success('Configuring storage', '');
 
-    toast.success('Configuring bucket', 'Bucket configuration successful');
+    // If added a new configuration, do a recursive sync of this bucket
+    if (!props.bucket) {
+      await bucketStore.syncBucket(bucketModel.bucketId, true)
+        .then(() => toast.info('Sync in progress', ''))
+        .catch(error => toast.error('Unable to sync with storage location', error, { life: 0 }));
+    }
+
+    // refresh bucket list
+    await bucketStore.fetchBuckets({ userId: getUserId.value, objectPerms: true });
+
+    // trim trailing "//", if present
+    const currBucketPath = getBucketPath(initialValues as Bucket).endsWith('//')
+      ? getBucketPath(initialValues as Bucket).slice(0, -1)
+      : getBucketPath(initialValues as Bucket);
+
+    const hasChildren = bucketStore.buckets.some(
+      (b) => getBucketPath(b).includes(currBucketPath) && getBucketPath(b) !== currBucketPath
+    );
+
+    if ((bucketChanges.accessKeyId || bucketChanges.secretAccessKey) && hasChildren) {
+      toast.info('Subfolders exist', 'Remember to update their credentials where applicable', {
+        life: 10000
+      });
+    }
   } catch (error: any) {
-    toast.error('Configuring bucket', error);
+    toast.error('Configuring storage', error.response?.data.detail ?? error, { life: 0 });
   }
 };
 
@@ -93,10 +127,22 @@ const onCancel = () => {
     >
       <TextInput
         name="bucketName"
-        label="Bucket name *"
+        label="Folder name *"
         placeholder="My Documents"
-        help-text="The display name for the bucket - any name as you would like to see it listed in BC Stats LockBox."
-        autofocus
+        help-text="help-text="The display name for the bucket - any name as you would like to see it listed in BC Stats LockBox.""
+        focus-trap
+      />
+      <TextInput
+        name="bucket"
+        label="Bucket *"
+        placeholder="bucket0123456789"
+        :help-text="'The name of the bucket given to you. For example: \'yxwgj\'.'"
+      />
+      <TextInput
+        name="endpoint"
+        label="Endpoint *"
+        placeholder="https://example.com"
+        help-text="The URL of your object storage namespace without the bucket identifier/name."
       />
       <Password
         name="adminPass"
@@ -119,17 +165,25 @@ const onCancel = () => {
         icon="pi pi-check"
       />
       <Button
-        class="p-button-outlined mt-2"
+        class="p-button-outlined mt-2 mr-1"
         label="Cancel"
         icon="pi pi-times"
         @click="onCancel"
+      />
+      <SyncButton
+        v-if="props.bucket"
+        class="p-button-outlined mt-2 mr-1"
+        label="Sync"
+        label-text="Synchronize all files and sub-folders"
+        :bucket-id="bucket?.bucketId"
+        :mode="ButtonMode.BUTTON"
+        :recursive="true"
       />
     </Form>
   </div>
 </template>
 
 <style lang="scss" scoped>
-
 :deep(.p-inputtext) {
   width: 100% !important;
 }

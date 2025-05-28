@@ -48,14 +48,15 @@ const useToastSpy = vi.spyOn(primevue, 'useToast');
 beforeEach(() => {
   setActivePinia(createPinia());
 
-  sessionStorage.setItem(StorageKey.CONFIG, JSON.stringify(
-    {
+  sessionStorage.setItem(
+    StorageKey.CONFIG,
+    JSON.stringify({
       oidc: {
         authority: 'abc',
         clientId: '123'
       }
-    }
-  ));
+    })
+  );
 
   vi.clearAllMocks();
 
@@ -67,7 +68,6 @@ afterEach(() => {
 });
 
 describe('Bucket Store', () => {
-
   let appStore: StoreGeneric;
   let bucketStore: StoreGeneric;
   let permissionStore: StoreGeneric;
@@ -94,7 +94,6 @@ describe('Bucket Store', () => {
     updateBucketSpy = vi.spyOn(bucketService, 'updateBucket');
   });
 
-
   describe('createBucket', () => {
     it('calls the service', async () => {
       createBucketSpy.mockReturnValue({ data: {} } as any);
@@ -108,12 +107,9 @@ describe('Bucket Store', () => {
     });
   });
 
-
   describe('fetchBuckets', () => {
     it('gets the bucket list', async () => {
-      permissionStore.bucketPermissions = [
-        readPerm
-      ];
+      permissionStore.bucketPermissions = [readPerm];
 
       searchBucketsSpy.mockReturnValue({ data: [bucket] } as any);
       fetchBucketPermissionsSpy.mockReturnValue([readPerm] as any);
@@ -130,9 +126,7 @@ describe('Bucket Store', () => {
     });
 
     it('does not change state on error', async () => {
-      permissionStore.bucketPermissions = [
-        readPerm
-      ];
+      permissionStore.bucketPermissions = [readPerm];
 
       searchBucketsSpy.mockImplementation(() => {
         throw new Error();
@@ -147,18 +141,17 @@ describe('Bucket Store', () => {
       expect(searchBucketsSpy).toHaveBeenCalledTimes(1);
       expect(searchBucketsSpy).toBeCalledWith({ bucketId: ['000'] });
       expect(mockToast).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledWith('Fetching buckets', new Error);
+      expect(mockToast).toHaveBeenCalledWith('Fetching buckets', new Error(), { life: 0 });
       expect(endIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
       expect(bucketStore.getBuckets).toStrictEqual([]);
     });
   });
 
-
-  describe('findBucketById', () => {
+  describe('getBucket', () => {
     it('returns a matching bucket', () => {
       bucketStore.buckets = [bucket];
 
-      const result = bucketStore.findBucketById('000');
+      const result = bucketStore.getBucket('000');
 
       expect(result).toStrictEqual(bucket);
     });
@@ -166,12 +159,11 @@ describe('Bucket Store', () => {
     it('returns undefined when no matching bucket is found', () => {
       bucketStore.buckets = [bucket];
 
-      const result = bucketStore.findBucketById('foo');
+      const result = bucketStore.getBucket('foo');
 
       expect(result).toStrictEqual(undefined);
     });
   });
-
 
   describe('updateBucket', () => {
     it('updates the bucket', async () => {

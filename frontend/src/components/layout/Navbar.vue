@@ -10,23 +10,33 @@ const { getIsAuthenticated } = storeToRefs(useAuthStore());
 </script>
 
 <template>
-  <nav
-    class="navigation-main"
-  >
+  <nav class="navigation-main lg:px-7">
     <Toolbar>
       <template #start>
         <ol class="list-none m-0 p-0 flex flex-row align-items-center font-semibold">
           <li class="mr-2">
-            <router-link :to="{ name: RouteNames.HOME }">
-              Home
+            <router-link :to="{ name: RouteNames.HOME }">Home</router-link>
+          </li>
+          <li
+            v-if="getIsAuthenticated"
+            class="mr-2"
+          >
+            <router-link
+              :to="{ name: RouteNames.LIST_BUCKETS }"
+              aria-label="My files"
+            >
+              My Files
             </router-link>
           </li>
           <li
             v-if="getIsAuthenticated"
             class="mr-2"
           >
-            <router-link :to="{ name: RouteNames.LIST_BUCKETS }">
-              My Buckets
+            <router-link
+              :to="{ name: RouteNames.LIST_OBJECTS_DELETED }"
+              aria-label="Recycle Bin"
+            >
+            Recycle Bin
             </router-link>
           </li>
           <!-- <li class="mr-2">
@@ -56,7 +66,6 @@ const { getIsAuthenticated } = storeToRefs(useAuthStore());
   background-color: #38598a;
   color: #fcba19;
   display: flex;
-  padding: 0rem 3rem 0rem 3rem;
   width: 100%;
   box-shadow: 0 6px 8px -4px #b3b1b3;
   -webkit-box-shadow: 0 6px 8px -4px #b3b1b3;
@@ -80,10 +89,6 @@ const { getIsAuthenticated } = storeToRefs(useAuthStore());
           padding: 0.4rem 0.8rem 0.6rem 0.8rem;
           text-decoration: none;
 
-          &:focus {
-            outline: none;
-            outline-offset: 0;
-          }
           &:hover {
             text-decoration: underline;
           }
