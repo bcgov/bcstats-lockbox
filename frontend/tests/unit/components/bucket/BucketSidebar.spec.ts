@@ -17,6 +17,7 @@ const testSidebarInfo = {
   endpoint: 'http://127.0.0.1:9000',
   key: '/',
   secretAccessKey: 'REDACTED',
+  adminPass: 'REDACTED',
   region: 'null',
   active: true,
   createdBy: '11111111-2222-3333-4444-555555555555',

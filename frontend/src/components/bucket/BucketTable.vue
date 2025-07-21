@@ -145,7 +145,8 @@ function createDummyNodes(neighbour: BucketTreeNode, node: BucketTreeNode) {
         endpoint: node.data.endpoint,
         key: key,
         region: '',
-        secretAccessKey: ''
+        secretAccessKey: '',
+        adminPass: ''
       },
       children: new Array(),
       isRoot: false
@@ -221,7 +222,8 @@ watch(getBuckets, () => {
                 endpoint: node.data.endpoint,
                 key: '/',
                 region: '',
-                secretAccessKey: ''
+                secretAccessKey: '',
+                adminPass: ''
               },
               children: new Array(),
               isRoot: true

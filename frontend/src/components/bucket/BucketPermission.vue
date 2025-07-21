@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import BucketPermissionAddUser from '@/components/bucket/BucketPermissionAddUser.vue';
 import { BulkPermission } from '@/components/common';
 import { useAlert } from '@/composables/useAlert';
-import { Button, Checkbox, Column, DataTable, TabPanel, TabView } from '@/lib/primevue';
+import { Button, Checkbox, Column, DataTable, TabPanel, TabView, useConfirm } from '@/lib/primevue';
 
 import { useBucketStore, usePermissionStore } from '@/store';
 import { Permissions } from '@/utils/constants';
@@ -72,7 +72,7 @@ const updateBucketPermission = (value: boolean, fullName: string, userId: string
       // Give a warning when removing MANAGE permission
       } else {
         confirmRemoveManage(fullName, userId, permCode);
-      }     
+      }
       // Set the value back as clicking will automatically change it
       const perm: UserPermissions = getMappedBucketToUserPermissions.value.find(
         (x: UserPermissions) => x.userId === userId
@@ -149,7 +149,7 @@ onBeforeMount(async () => {
               input-id="create"
               aria-label="upload"
               :binary="true"
-              @update:model-value="(value: boolean) => updateBucketPermission(value, data.userId, Permissions.CREATE)"
+              @update:model-value="(value: boolean) => updateBucketPermission(value, data.fullName, data.userId, Permissions.CREATE)"
             />
           </template>
         </Column>
@@ -164,7 +164,7 @@ onBeforeMount(async () => {
               input-id="read"
               aria-label="Read"
               :binary="true"
-              @update:model-value="(value: boolean) => updateBucketPermission(value, data.userId, Permissions.READ)"
+              @update:model-value="(value: boolean) => updateBucketPermission(value, data.fullName, data.userId, Permissions.READ)"
             />
           </template>
         </Column>
@@ -179,7 +179,7 @@ onBeforeMount(async () => {
               input-id="update"
               aria-label="Update"
               :binary="true"
-              @update:model-value="(value: boolean) => updateBucketPermission(value, data.userId, Permissions.UPDATE)"
+              @update:model-value="(value: boolean) => updateBucketPermission(value, data.fullName, data.userId, Permissions.UPDATE)"
             />
           </template>
         </Column>
@@ -194,7 +194,7 @@ onBeforeMount(async () => {
               input-id="delete"
               aria-label="delete"
               :binary="true"
-              @update:model-value="(value: boolean) => updateBucketPermission(value, data.userId, Permissions.DELETE)"
+              @update:model-value="(value: boolean) => updateBucketPermission(value, data.fullName, data.userId, Permissions.DELETE)"
             />
           </template>
         </Column>
@@ -210,7 +210,7 @@ onBeforeMount(async () => {
               aria-label="manage"
               :binary="true"
               :disabled="!data.elevatedRights"
-              @update:model-value="(value: boolean) => updateBucketPermission(value, data.userId, Permissions.MANAGE)"
+              @update:model-value="(value: boolean) => updateBucketPermission(value, data.fullName, data.userId, Permissions.MANAGE)"
             />
           </template>
         </Column>

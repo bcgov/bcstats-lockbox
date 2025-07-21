@@ -214,6 +214,10 @@ export const useObjectStore = defineStore('object', () => {
     }
   }
 
+  function findObjectById(objectId: string) {
+    return state.objects.value.find((x) => x.id === objectId);
+  }
+
   async function headObject(objectId: string) {
     try {
       appStore.beginIndeterminateLoading();
@@ -311,6 +315,7 @@ export const useObjectStore = defineStore('object', () => {
     restoreObject,
     getObjectUrl,
     fetchObjects,
+    findObjectById,
     headObject,
     removeSelectedObject,
     setObjects,

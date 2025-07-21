@@ -104,6 +104,10 @@ export const useBucketStore = defineStore('bucket', () => {
     }
   }
 
+  function findBucketById(bucketId: string) {
+    return state.buckets.value.find((x) => x.bucketId === bucketId);
+  }
+
   async function updateBucket(bucketId: string, bucket: Bucket) {
     try {
       appStore.beginIndeterminateLoading();
@@ -150,6 +154,7 @@ export const useBucketStore = defineStore('bucket', () => {
     createBucketChild,
     deleteBucket,
     fetchBuckets,
+    findBucketById,
     syncBucket,
     syncBucketStatus,
     updateBucket

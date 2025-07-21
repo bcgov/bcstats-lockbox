@@ -38,6 +38,7 @@ const bucketVersioningEnabled = computed(() => getIsVersioningEnabled.value(prop
 
 // Actions
 const confirm = useConfirm();
+const toast = useToast();
 
 const confirmDelete = async () => {
   focusedElement.value = document.activeElement;

@@ -157,19 +157,6 @@ watch(props, () => {
               :ids="[props.objectId]"
               :version-id="data.id"
             />
-            <router-link
-              v-if="data.public || permissionStore.isObjectActionAllowed(
-                props.objectId, getUserId, Permissions.READ, props.bucketId as string)"
-              :to="{ name: RouteNames.DETAIL_OBJECTS,
-                     query: { objectId: props.objectId, versionId: data.id } }"
-            >
-              <Button 
-                v-tooltip.bottom="'File Details'"
-                class="p-button-lg p-button-rounded p-button-text"
-              >
-                <font-awesome-icon icon="fa-solid fa-circle-info" />
-              </Button>
-            </router-link>
             <DeleteObjectButton
               v-if="
                 permissionStore.isObjectActionAllowed(
@@ -194,7 +181,7 @@ watch(props, () => {
               :mode="ButtonMode.ICON"
               :ids="[props.objectId]"
               :version-id="data.id"
-              @on-deleted-success="onDeletedSuccess"
+              @on-version-restored="emitToParent"
             />
           </template>
         </Column>

@@ -129,7 +129,7 @@ const onCancel = () => {
         name="bucketName"
         label="Folder name *"
         placeholder="My Documents"
-        help-text="help-text="The display name for the bucket - any name as you would like to see it listed in BC Stats LockBox.""
+        help-text="help-text=The display name for the bucket - any name as you would like to see it listed in BC Stats LockBox."
         focus-trap
       />
       <TextInput

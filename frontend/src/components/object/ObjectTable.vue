@@ -80,8 +80,8 @@ const showInfo = (id: string) => {
   focusedElement.value = document.activeElement;
 };
 
-/*const showPermissions = async (objectId: string) => {
-  await permissionStore.fetchObjectPermissions({objectId});
+async function showPermissions(objectId: string) {
+  await permissionStore.fetchObjectPermissions({ objectId });
 
   permissionsVisible.value = true;
   permissionsObjectId.value = objectId;
@@ -304,7 +304,6 @@ const selectedFilters = (payload: any) => {
           {{ formatDateLong(data.lastModifiedDate ?? data.createdAt) }}
         </template>
       </Column>
-      <!-- Disable public sharing
       <Column
         field="publicSharing"
         header="Public"
@@ -321,7 +320,6 @@ const selectedFilters = (payload: any) => {
           />
         </template>
       </Column>
-      -->
       <Column
         header="Actions"
         header-style="min-width: 270px"
@@ -341,10 +339,12 @@ const selectedFilters = (payload: any) => {
             :mode="ButtonMode.ICON"
             :ids="[data.id]"
           />
-          <!--<Button
-            v-if="permissionStore.isObjectActionAllowed(
-              data.id, getUserId, Permissions.MANAGE, props.bucketId as string)"
-            v-tooltip.bottom="'File Permissions'"
+          <Button
+            v-if="
+              permissionStore.isObjectActionAllowed(data.id, getUserId, Permissions.MANAGE, props.bucketId as string)
+            "
+            id="file_permissions"
+            v-tooltip.bottom="'File permissions'"
             class="p-button-lg p-button-text"
             aria-label="File permissions"
             @click="showPermissions(data.id)"
