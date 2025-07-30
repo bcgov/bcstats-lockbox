@@ -10,8 +10,9 @@ ARG APP_ROOT
 ENV NO_UPDATE_NOTIFIER=true
 
 # NPM Permission Fix
-RUN mkdir -p /.npm
-RUN chown -R 1001:0 /.npm
+RUN mkdir -p $HOME/.npm
+ENV NPM_CONFIG_CACHE=$HOME/.npm
+RUN chown -R 1001:0 $HOME/.npm
 
 # Build App
 COPY app ${APP_ROOT}
@@ -29,8 +30,9 @@ ARG APP_ROOT
 ENV NO_UPDATE_NOTIFIER=true
 
 # NPM Permission Fix
-RUN mkdir -p /.npm
-RUN chown -R 1001:0 /.npm
+RUN mkdir -p $HOME/.npm
+ENV NPM_CONFIG_CACHE=$HOME/.npm
+RUN chown -R 1001:0 $HOME/.npm
 
 # Build Frontend
 COPY frontend ${APP_ROOT}
@@ -49,8 +51,9 @@ ENV APP_PORT=8080 \
     NO_UPDATE_NOTIFIER=true
 
 # NPM Permission Fix
-RUN mkdir -p /.npm
-RUN chown -R 1001:0 /.npm
+RUN mkdir -p $HOME/.npm
+ENV NPM_CONFIG_CACHE=$HOME/.npm
+RUN chown -R 1001:0 $HOME/.npm
 
 # Install File Structure
 COPY --from=app ${APP_ROOT}/sbin ${APP_ROOT}/sbin
