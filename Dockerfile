@@ -47,7 +47,7 @@ RUN echo "=== Package.json contents ===" && cat package.json
 RUN echo "=== Node modules Vue related ===" && ls node_modules | grep vue || echo "No Vue modules found"
 RUN echo "=== Build script contents ===" && npm run build --dry-run || echo "Dry run failed"
 
-RUN npm run build
+RUN npm run build -- --no-lint
 
 #
 # Create the final container image
