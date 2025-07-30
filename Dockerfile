@@ -40,8 +40,14 @@ COPY frontend ${APP_ROOT}
 #RUN chown -R 1001:0 ${APP_ROOT}
 USER 1001
 WORKDIR ${APP_ROOT}
-#RUN npm ci && npm run build
-RUN node --openssl-legacy-provider ./node_modules/.bin/vue-cli-service build
+RUN npm ci
+
+# Figureing out errors
+RUN echo "=== Package.json contents ===" && cat package.json
+RUN echo "=== Node modules Vue related ===" && ls node_modules | grep vue || echo "No Vue modules found"
+RUN echo "=== Build script contents ===" && npm run build --dry-run || echo "Dry run failed"
+
+RUN npm run build
 
 #
 # Create the final container image
