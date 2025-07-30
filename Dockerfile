@@ -16,7 +16,7 @@ RUN chown -R 1001:0 $HOME/.npm
 
 # Build App
 COPY app ${APP_ROOT}
-RUN chown -R 1001:0 ${APP_ROOT}
+#RUN chown -R 1001:0 ${APP_ROOT}
 USER 1001
 WORKDIR ${APP_ROOT}
 RUN npm ci && npm run build
