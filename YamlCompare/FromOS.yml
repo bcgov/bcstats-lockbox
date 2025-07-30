@@ -1,0 +1,198 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  creationTimestamp: '2023-07-24T17:16:35Z'
+  generation: 29
+  managedFields:
+    - apiVersion: tekton.dev/v1beta1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          .: {}
+          'f:finally': {}
+          'f:resources': {}
+          'f:tasks': {}
+          'f:workspaces': {}
+      manager: Mozilla
+      operation: Update
+      time: '2023-09-24T18:34:28Z'
+    - apiVersion: tekton.dev/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          'f:params': {}
+      manager: Mozilla
+      operation: Update
+      time: '2025-07-23T21:10:36Z'
+  name: bcstats-box-pipe
+  namespace: df9936-tools
+  resourceVersion: '15273049617'
+  uid: 4734858e-ba0b-4e98-90cd-12bc15d8264f
+spec:
+  params:
+    - default: dev
+      description: Deployment Environment
+      name: deployenv
+      type: string
+    - default: latest
+      description: Image Tag to deploy
+      name: imagetag
+      type: string
+    - default: 'yes'
+      description: Build?
+      name: dobuild
+      type: string
+    - default: josh-dev
+      description: GitHub Repository Revision (branch)
+      name: github-repo-revision
+      type: string
+  tasks:
+    - name: git-clone
+      params:
+        - name: url
+          value: 'https://github.com/bcgov/bcstats-lockbox.git'
+        - name: revision
+          value: $(params.github-repo-revision)
+        - name: refspec
+          value: ''
+        - name: submodules
+          value: 'true'
+        - name: depth
+          value: '1'
+        - name: sslVerify
+          value: 'true'
+        - name: crtFileName
+          value: ca-bundle.crt
+        - name: subdirectory
+          value: ''
+        - name: sparseCheckoutDirectories
+          value: ''
+        - name: deleteExisting
+          value: 'true'
+        - name: httpProxy
+          value: ''
+        - name: httpsProxy
+          value: ''
+        - name: noProxy
+          value: ''
+        - name: verbose
+          value: 'true'
+        - name: gitInitImage
+          value: 'registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8@sha256:429ba9c10dfcff4ee0154ab75f9bd06fd306f019c0ed0b062ba7c03e56e3e33b'
+        - name: userHome
+          value: /home/git
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+    - name: buildah
+      params:
+        - name: IMAGE
+          value: 'image-registry.openshift-image-registry.svc:5000/df9936-tools/bcbox:$(params.imagetag)'
+        - name: BUILDER_IMAGE
+          value: 'registry.redhat.io/rhel8/buildah@sha256:00795fafdab9bbaa22cd29d1faa1a01e604e4884a2c935c1bf8e3d1f0ad1c084'
+        - name: STORAGE_DRIVER
+          value: vfs
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: 'true'
+        - name: FORMAT
+          value: oci
+        - name: BUILD_EXTRA_ARGS
+          value: ''
+        - name: PUSH_EXTRA_ARGS
+          value: ''
+        - name: SKIP_PUSH
+          value: 'false'
+      runAfter:
+        - git-clone
+      taskRef:
+        kind: ClusterTask
+        name: buildah
+      when:
+        - input: $(params.dobuild)
+          operator: in
+          values:
+            - 'yes'
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: helm-upgrade-from-source
+      params:
+        - name: charts_dir
+          value: charts/bcbox
+        - name: release_version
+          value: ''
+        - name: release_name
+          value: bcstats-bcbox
+        - name: release_namespace
+          value: df9936-$(params.deployenv)
+        - name: overwrite_values
+          value: 'image.tag=$(params.imagetag),image.repository=image-registry.openshift-image-registry.svc:5000/df9936-tools,config.enabled=true,config.releaseScoped=true,config.configMap.FRONTEND_OIDC_AUTHORITY=https://$(params.deployenv).loginproxy.gov.bc.ca/auth/realms/standard,config.configMap.FRONTEND_OIDC_CLIENTID=bc-stats-coms-bc-box-4936,config.configMap.FRONTEND_COMS_APIPATH=https://bcstatscoms-$(params.deployenv).apps.gov.bc.ca/api/v1'
+        - name: values_file
+          value: values.yaml
+        - name: helm_image
+          value: 'docker.io/lachlanevenson/k8s-helm@sha256:5c792f29950b388de24e7448d378881f68b3df73a7b30769a6aa861061fd08ae'
+        - name: upgrade_extra_params
+          value: ''
+      runAfter:
+        - helm-dep-update2
+      taskRef:
+        kind: ClusterTask
+        name: helm-upgrade-from-source
+      when:
+        - input: $(params.deployenv)
+          operator: in
+          values:
+            - dev
+            - test
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: helm-upgrade-prod-from-source
+      params:
+        - name: charts_dir
+          value: charts/bcbox
+        - name: release_version
+          value: ''
+        - name: release_name
+          value: bcstats-bcbox
+        - name: release_namespace
+          value: df9936-$(params.deployenv)
+        - name: overwrite_values
+          value: 'image.tag=$(params.imagetag),image.repository=image-registry.openshift-image-registry.svc:5000/df9936-tools,config.enabled=true,config.releaseScoped=true,config.configMap.FRONTEND_OIDC_AUTHORITY=https://loginproxy.gov.bc.ca/auth/realms/standard,config.configMap.FRONTEND_OIDC_CLIENTID=bc-stats-coms-bc-box-4936,config.configMap.FRONTEND_COMS_APIPATH=https://bcstatscoms.apps.gov.bc.ca/api/v1'
+        - name: values_file
+          value: values.yaml
+        - name: helm_image
+          value: 'docker.io/lachlanevenson/k8s-helm@sha256:5c792f29950b388de24e7448d378881f68b3df73a7b30769a6aa861061fd08ae'
+        - name: upgrade_extra_params
+          value: ''
+      runAfter:
+        - helm-dep-update2
+      taskRef:
+        kind: ClusterTask
+        name: helm-upgrade-from-source
+      when:
+        - input: $(params.deployenv)
+          operator: in
+          values:
+            - prod
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+    - name: helm-dep-update2
+      runAfter:
+        - buildah
+      taskRef:
+        kind: Task
+        name: helm-dep-update2
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+  workspaces:
+    - name: shared-workspace

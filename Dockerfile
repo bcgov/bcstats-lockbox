@@ -1,5 +1,5 @@
 ARG APP_ROOT=/opt/app-root/src
-ARG BASE_IMAGE=docker.io/node:20.15.1-alpine3.20
+ARG BASE_IMAGE=registry.access.redhat.com/ubi8/nodejs-20:latest
 
 #
 # Build the app
