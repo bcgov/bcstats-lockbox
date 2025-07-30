@@ -32,11 +32,11 @@ ENV NO_UPDATE_NOTIFIER=true
 # NPM Permission Fix
 RUN mkdir -p $HOME/.npm
 ENV NPM_CONFIG_CACHE=$HOME/.npm
-RUN chown -R 1001:0 $HOME/.npm
+#RUN chown -R 1001:0 $HOME/.npm
 
 # Build Frontend
 COPY frontend ${APP_ROOT}
-RUN chown -R 1001:0 ${APP_ROOT}
+#RUN chown -R 1001:0 ${APP_ROOT}
 USER 1001
 WORKDIR ${APP_ROOT}
 RUN npm ci && npm run build
@@ -53,7 +53,7 @@ ENV APP_PORT=8080 \
 # NPM Permission Fix
 RUN mkdir -p $HOME/.npm
 ENV NPM_CONFIG_CACHE=$HOME/.npm
-RUN chown -R 1001:0 $HOME/.npm
+#RUN chown -R 1001:0 $HOME/.npm
 
 # Install File Structure
 COPY --from=app ${APP_ROOT}/sbin ${APP_ROOT}/sbin
@@ -65,7 +65,7 @@ COPY app/package.json app/package-lock.json ${APP_ROOT}
 WORKDIR ${APP_ROOT}
 
 # Install Application
-RUN chown -R 1001:0 ${APP_ROOT}
+#RUN chown -R 1001:0 ${APP_ROOT}
 USER 1001
 RUN npm ci --omit=dev
 
