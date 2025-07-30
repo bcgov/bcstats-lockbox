@@ -28,6 +28,7 @@ FROM ${BASE_IMAGE} as frontend
 
 ARG APP_ROOT
 ENV NO_UPDATE_NOTIFIER=true
+ENV NODE_OPTIONS="--openssl-legacy-provider"
 
 # NPM Permission Fix
 RUN mkdir -p $HOME/.npm
