@@ -28,7 +28,7 @@ FROM ${BASE_IMAGE} as frontend
 
 ARG APP_ROOT
 ENV NO_UPDATE_NOTIFIER=true
-ENV NODE_OPTIONS="--openssl-legacy-provider"
+
 
 # NPM Permission Fix
 RUN mkdir -p $HOME/.npm
@@ -40,7 +40,8 @@ COPY frontend ${APP_ROOT}
 #RUN chown -R 1001:0 ${APP_ROOT}
 USER 1001
 WORKDIR ${APP_ROOT}
-RUN npm ci && npm run build
+#RUN npm ci && npm run build
+RUN node --openssl-legacy-provider ./node_modules/.bin/vue-cli-service build
 
 #
 # Create the final container image
