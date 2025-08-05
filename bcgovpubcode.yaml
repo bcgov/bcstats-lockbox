@@ -1,13 +1,9 @@
 ---
-data_management_roles:
-  data_custodian: Fraser Marshall
-  product_owner: Shabari Khaniyan Kunnumel
 product_external_dependencies:
   common_components:
     - Common-Object-Management-Service
   identity_authorization:
     - IDIR
-    - BceId
     - Business-BceId
   notification_standard: []
 product_information:
@@ -19,19 +15,18 @@ product_information:
   business_capabilities_standard:
     - Other
   ministry:
-    - Water, Land and Resource Stewardship
-  product_acronym: BCBox
+    - Citizens' Services
+  product_acronym: BC Stats LockBox
   product_description: >-
-    BCBox is a hosted user interface that serves as a common front-end consumer
+    BC Stats LockBox is a hosted user interface that serves as a common front-end consumer
     of the hosted COMS API and can be used as a simple dropbox to allow file
     sharing and permission management using S3.
-  product_name: BCBox
+  product_name: BC Stats LockBox
   product_status: maturing
   product_urls:
-    - https://bcbox.nrs.gov.bc.ca
+    - https://bcstatslockbox.apps.gov.bc.ca
   program_area: >-
-    Natural Resource Information and Digital Services - Development and Digital
-    Services
+    OCIO - BC Stats
 product_technology_information:
   backend_frameworks:
     - name: Express

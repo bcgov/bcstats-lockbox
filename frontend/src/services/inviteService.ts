@@ -69,10 +69,10 @@ export default {
       // alternate templates depending if resource is a file or a folder
       if (resourceType === 'object') {
         resourceName = resource.name;
-        subject = `You have been invited to access ${resourceName} on BCBox`;
+        subject = `You have been invited to access ${resourceName} on BC Stats LockBox`;
       } else if (resourceType === 'bucket') {
         resourceName = resource.bucketName;
-        subject = `You have been invited to access ${resourceName} on BCBox`;
+        subject = `You have been invited to access ${resourceName} on BC Stats LockBox`;
       }
 
       // build html template for email body
@@ -104,7 +104,7 @@ export default {
    * @param {string} resourceType eg bucket or object
    * @param {COMSObject | Bucket } resource COMS object or bucket
    * @param {User | null} currentUser current user creating the invite
-   * @param {Array<User>} users array of BCBox users
+   * @param {Array<User>} users array of BC Stats LockBox users
    * @returns {Promise<string>} CHES TransactionId
    */
   notifyUsers(resourceType: string, resource: any, currentUser: any, users: Array<any>) {
@@ -113,11 +113,11 @@ export default {
       // alternate templates depending if resource is a file or a folder
       if (resourceType === 'object') {
         resourceName = resource.name;
-        subject = `You have been invited to access ${resourceName} on BCBox`;
+        subject = `You have been invited to access ${resourceName} on BC Stats LockBox`;
         resourceUrl = `${window.location.origin}/detail/objects?objectId=${resource.id}`;
       } else {
         resourceName = resource.bucketName;
-        subject = `You have been invited to access ${resourceName} on BCBox`;
+        subject = `You have been invited to access ${resourceName} on BC Stats LockBox`;
         resourceUrl = `${window.location.origin}/list/objects?bucketId=${resource.bucketId}`;
       }
       // build html template for email body
@@ -128,7 +128,7 @@ export default {
           return {
             to: [user.email],
             context: {
-              fullName: user.fullName ? user.fullName : 'BCBox user'
+              fullName: user.fullName ? user.fullName : 'BC Stats LockBox user'
             }
           };
         }),

@@ -11,7 +11,7 @@ config:
     SERVER_BODYLIMIT: 30mb
     SERVER_CHES_APIPATH: https://ches.api.gov.bc.ca/api/v1
     SERVER_CHES_TOKENURL: https://loginproxy.gov.bc.ca/auth/realms/comsvcauth/protocol/openid-connect/token
-    SERVER_CHES_FROM: DoNotReply.BCBox@gov.bc.ca
+    SERVER_CHES_FROM: DoNotReply.BCStatsLockBox@gov.bc.ca
     # SERVER_LOGFILE: ~
     SERVER_LOGLEVEL: http
     SERVER_OIDC_AUTHORITY: https://loginproxy.gov.bc.ca/auth/realms/standard

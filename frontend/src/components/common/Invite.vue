@@ -298,7 +298,7 @@ const onSubmit = handleSubmit(async (values: any, { resetForm }) => {
         placeholder="Enter email"
         :help-text="`Enter an email address of the person you are inviting to access this
           ${props.resourceType === 'bucket' ? 'folder' : 'file'}. <br />
-          The email address must be associated with the account they will use to sign in to BCBox.`"
+          The email address must be associated with the account they will use to sign in to BC Stats LockBox.`"
         class="invite-email"
       />
     </div>
@@ -319,17 +319,17 @@ const onSubmit = handleSubmit(async (values: any, { resetForm }) => {
         >
           Enter an email address for each person you are inviting to access this
           {{ props.resourceType === 'bucket' ? 'folder' : 'file' }}. The email address must be associated with the
-          account they will use to sign in to BCBox.
+          account they will use to sign in to BC Stats LockBox.
         </small>
         <ErrorMessage name="multiEmail" />
       </div>
     </div>
 
-    <p class="mb-2">If a person you are inviting is already using BCBox</p>
+    <p class="mb-2">If a person you are inviting is already using BC Stats LockBox</p>
     <div class="flex flex-wrap gap-3 mb-3">
       <InputSwitch
         v-model="notify"
-        aria-label="Notify existing BCBox users"
+        aria-label="Notify existing BC Stats LockBox users"
       />
       <span v-if="notify">email them a link to the {{ props.resourceType === 'bucket' ? 'folder' : 'file' }}</span>
       <span v-else>don't send them a notification</span>

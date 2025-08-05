@@ -20,13 +20,9 @@ const { getConfig } = storeToRefs(useConfigStore());
       >
         {{ getConfig?.notificationBanner }}
       </Message>
-      <h1 class="mb-4">Store and share files in BCBox</h1>
+      <h1 class="mb-4">Store and share files in BC Stats LockBox</h1>
       <p class="text-xl">
-        This website uses the
-        <a href="https://bcgov.github.io/common-service-showcase/services/coms.html">
-          Common Object Management Service
-        </a>
-        so
+        This website allows
         <a
           href="https://www2.gov.bc.ca/gov/content/governments/services-for-government/information-management-technology/id-services/idir"
         >
@@ -34,14 +30,11 @@ const { getConfig } = storeToRefs(useConfigStore());
         </a>
         and
         <a href="https://www.bceid.ca/">BCeID</a>
-        users can upload and share files.
+        users to upload and share files.
         <br />
         <br />
-        BCBox displays files in folders, which are visualizations of &quot;bucket&quot; storage location sources
-        required to use BCBox. If you are new to this and don't know a bucket manager, contact
-        <a href="https://apps.nrs.gov.bc.ca/int/jira/servicedesk/customer/portal/1/create/701">NRIDS Optimization</a>
-        (NRM only) or your ministry's service desk to get credentials for a &quot;bucket&quot; storage location source.
-        Then come back, log in, and add it in BCBox to have it show up as a folder.
+        BC Stats LockBox displays files in folders, which are visualizations of &quot;bucket&quot; storage location sources
+        required to use BC Stats LockBox. 
       </p>
 
       <div class="flex flex-column justify-content-center align-items-center mb-4">
@@ -54,22 +47,15 @@ const { getConfig } = storeToRefs(useConfigStore());
         <img
           src="@/assets/images/home_1.png"
           class="border-1 drop-shadow w-8 sm:col-10 mt-5 mb-8 flex align-items-center"
-          alt="Screenshot of BCBox's file list interface:
+          alt="Screenshot of BC Stats LockBox's file list interface:
             a list of example files and possible actions including Upload, Download and Delete."
         />
-        <h2 class="mb-4">Ongoing feature enhancements</h2>
-
-        <p class="text-xl">
-          BCBox is constantly improving! See BCBox's
-          <a href="https://github.com/bcgov/bcbox/wiki">Help</a>
-          for more information, a link to our Product Roadmap, and documentation of features as they are implemented.
-        </p>
       </div>
 
       <div class="grid mb-8 text-left">
         <div class="col-6 pr-5">
           <h3 class="mb-3">Upload and download objects</h3>
-          <p class="text-xl">With BCBox, you can use low-cost object storage for your files, images and documents.</p>
+          <p class="text-xl">With BC Stats LockBox, you can use low-cost object storage for your files, images and documents.</p>
         </div>
         <div class="flex align-items-left">
           <p class="text-xl">
@@ -83,7 +69,7 @@ const { getConfig } = storeToRefs(useConfigStore());
           <img
             src="@/assets/images/home_2.png"
             class="border-1 drop-shadow"
-            alt="Screenshot of BCBox's upload interface: a drag-and-drop area,
+            alt="Screenshot of BC Stats LockBox's upload interface: a drag-and-drop area,
                 possible actions including Choose, Start Upload and Close."
           />
         </div>
@@ -103,26 +89,13 @@ const { getConfig } = storeToRefs(useConfigStore());
           <img
             src="@/assets/images/home_3.png"
             class="border-1 drop-shadow"
-            alt="Screenshot of BCBox's share interface,
+            alt="Screenshot of BC Stats LockBox's share interface,
                     demonstrating a share link and QR code."
           />
         </div>
       </div>
 
       <div class="flex flex-column justify-content-center align-items-center">
-        <h3 class="mb-4">Versioning, metadata, tagging, syncing and more</h3>
-
-        <p class="text-xl">
-          Contact
-          <a
-            href="https://apps.nrs.gov.bc.ca/int/jira/servicedesk/customer/portal/1/create/701"
-            target="_blank"
-          >
-            NRIDS Optimization
-          </a>
-          or your ministry's service desk to get &quot;bucket&quot; storage location source credentials and get started.
-        </p>
-
         <router-link :to="{ name: RouteNames.LIST_BUCKETS }">
           <Button>
             {{ getIsAuthenticated ? 'Go to my files' : 'Log in to get started' }}
@@ -164,21 +137,6 @@ const { getConfig } = storeToRefs(useConfigStore());
               If you intend to advise users to access with BCeID, please send an email to the
               <a href="mailto:IDIM.Consulting@gov.bc.ca">Provincial Identity Information Management Program</a>
               indicating your BCeID-related intentions
-            </li>
-            <li>
-              All other inquiries around getting or using &quot;bucket&quot; storage location sources should be directed
-              to
-              <a
-                href="https://apps.nrs.gov.bc.ca/int/jira/servicedesk/customer/portal/1/create/701"
-                target="_blank"
-              >
-                NRIDS Optimization
-              </a>
-              (Natural Resource ministries) or your ministry's service desk
-            </li>
-            <li>
-              Storage and custodianship of just the metadata and tags, not the objects themselves, is maintained by
-              Natural Resource Information &amp; Digital Services
             </li>
             <li>
               You will refer to and adhere to

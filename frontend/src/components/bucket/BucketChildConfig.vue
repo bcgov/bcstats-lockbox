@@ -130,7 +130,7 @@ const onCancel = () => {
         name="bucketName"
         label="Folder display name *"
         placeholder="My Documents"
-        help-text="Your custom display name for the subfolder - any name as you would like to see it listed in BCBox."
+        help-text="Your custom display name for the subfolder - any name as you would like to see it listed in BC Stats LockBox."
         class="child-input"
       />
       <Button
