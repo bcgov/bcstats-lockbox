@@ -57,12 +57,6 @@ const { getConfig } = storeToRefs(useConfigStore());
           <h3 class="mb-3">Upload and download objects</h3>
           <p class="text-xl">With BC Stats LockBox, you can use low-cost object storage for your files, images and documents.</p>
         </div>
-        <div class="flex align-items-left">
-          <p class="text-xl">
-            With BC Stats LockBox, you can use low-cost object storage for your files,
-            images and documents.
-          </p>
-        </div>
       </div>
       <div class="col-6 pl-5">
         <div class="flex align-items-center">
