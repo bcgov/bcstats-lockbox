@@ -29,7 +29,7 @@ const schema = object({
   bucketName: string().required().max(255).label('Folder display name'),
   subKey: string()
     .required()
-    .matches(/^[^\\]+$/, { excludeEmptyString: true, message: 'Path must not contain backslashes' })
+    .matches(/^[^\\]+$/, { excludeEmptyString: true, message: 'Path must not contain backslashes' }),
   adminPass: string().max(255).required().label('Administrator Password')
 });
 
