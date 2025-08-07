@@ -57,17 +57,18 @@ const { getConfig } = storeToRefs(useConfigStore());
           <h3 class="mb-3">Upload and download objects</h3>
           <p class="text-xl">With BC Stats LockBox, you can use low-cost object storage for your files, images and documents.</p>
         </div>
-      </div>
-      <div class="col-6 pl-5">
-        <div class="flex align-items-center">
-          <img
-            src="@/assets/images/home_2.png"
-            class="border-1 drop-shadow"
-            alt="Screenshot of BC Stats LockBox's upload interface: a drag-and-drop area,
-                possible actions including Choose, Start Upload and Close."
-          />
+        <div class="col-6 pl-5">
+          <div class="flex align-items-center">
+            <img
+              src="@/assets/images/home_2.png"
+              class="border-1 drop-shadow"
+              alt="Screenshot of BC Stats LockBox's upload interface: a drag-and-drop area,
+                  possible actions including Choose, Start Upload and Close."
+            />
+          </div>
         </div>
       </div>
+      
 
       <div class="grid mb-4 text-left">
         <div class="col-6 pr-5">
