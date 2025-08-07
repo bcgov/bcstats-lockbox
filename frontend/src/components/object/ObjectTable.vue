@@ -80,17 +80,6 @@ const showInfo = (id: string) => {
   focusedElement.value = document.activeElement;
 };
 
-<!-- hide permissions
-async function showPermissions(objectId: string) {
-  await permissionStore.fetchObjectPermissions({ objectId });
-
-  permissionsVisible.value = true;
-  permissionsObjectId.value = objectId;
-  permissionsObjectName.value = objectStore.getObject(objectId)?.name;
-  focusedElement.value = document.activeElement;
-}
--->
-
 onMounted(() => {
   loading.value = true;
   lazyParams.value = {
