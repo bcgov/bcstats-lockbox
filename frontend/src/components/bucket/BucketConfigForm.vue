@@ -53,7 +53,7 @@ const schema = object({
   key: string()
     .matches(/^[^\\]+$/, { excludeEmptyString: true, message: 'Path must not contain backslashes' })
     .max(255),
-  adminPass: string().max(255).required().label('Admin Password')
+  adminPass: string().max(255).required().label('Administrator Password')
 
 });
 

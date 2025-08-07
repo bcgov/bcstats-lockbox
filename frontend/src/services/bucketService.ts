@@ -33,8 +33,8 @@ export default {
    * @param {string} bucketName Display name for the mapped sub-folder
    * @returns {Promise} An axios response
    */
-  createBucketChild(parentBucketId: string, subKey: string, bucketName: string) {
-    return comsAxios().put(`${BUCKET_PATH}/${parentBucketId}/child`, { subKey, bucketName });
+  createBucketChild(parentBucketId: string, subKey: string, bucketName: string, adminPass: string) {
+    return comsAxios().put(`${BUCKET_PATH}/${parentBucketId}/child`, { subKey, bucketName, adminPass });
   },
 
   /**

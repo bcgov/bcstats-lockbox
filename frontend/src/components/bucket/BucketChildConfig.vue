@@ -4,6 +4,7 @@ import { Form } from 'vee-validate';
 import { ref } from 'vue';
 import { object, string } from 'yup';
 
+import Password from '@/components/form/Password.vue';
 import TextInput from '@/components/form/TextInput.vue';
 import { Button, Dialog, Message, useToast } from '@/lib/primevue';
 import { useAuthStore, useBucketStore, useNavStore } from '@/store';
@@ -29,6 +30,7 @@ const schema = object({
   subKey: string()
     .required()
     .matches(/^[^\\]+$/, { excludeEmptyString: true, message: 'Path must not contain backslashes' })
+  adminPass: string().max(255).required().label('Administrator Password')
 });
 
 // Actions
@@ -45,10 +47,11 @@ const onSubmit = async (values: any) => {
   try {
     const formData = {
       bucketName: values.bucketName.trim(),
-      subKey: values.subKey.trim()
+      subKey: values.subKey.trim(),
+      adminPass: values.adminPass,
     };
     // create bucket
-    await bucketStore.createBucketChild(props.parentBucket.bucketId, formData.subKey, formData.bucketName);
+    await bucketStore.createBucketChild(props.parentBucket.bucketId, formData.subKey, formData.bucketName, formData.adminPass);
     // refresh stores
     await bucketStore.fetchBuckets({ userId: getUserId.value, objectPerms: true });
     showDialog(false);
@@ -131,6 +134,13 @@ const onCancel = () => {
         label="Folder display name *"
         placeholder="My Documents"
         help-text="Your custom display name for the subfolder - any name as you would like to see it listed in BC Stats LockBox."
+        class="child-input"
+      />
+      <Password
+        name="adminPass"
+        label="Administrator Password *"
+        placeholder="password"
+        help-text="Administrator password used to create a subfolder."
         class="child-input"
       />
       <Button
