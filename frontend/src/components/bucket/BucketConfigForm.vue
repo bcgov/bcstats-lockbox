@@ -49,14 +49,12 @@ const initialValues: BucketForm = {
 
 // Form validation schema
 const schema = object({
-  accessKeyId: string().max(255).required().label('Access Key ID'),
-  bucket: string().max(255).required().label('Bucket'),
   bucketName: string().max(255).required().label('Folder name'),
-  endpoint: string().max(255).required().label('Endpoint'),
   key: string()
     .matches(/^[^\\]+$/, { excludeEmptyString: true, message: 'Path must not contain backslashes' })
     .max(255),
-  secretAccessKey: string().max(255).required().label('Secret Access Key')
+  adminPass: string().max(255).required().label('Admin Password')
+
 });
 
 // Actions
@@ -66,8 +64,7 @@ const onSubmit = async (values: any) => {
   try {
     const formBucket = {
       bucketName: values.bucketName,
-      endpoint: values.endpoint,
-      secretAccessKey: values.secretAccessKey
+      adminPass: values.adminPass,
     } as Bucket;
 
     // Only add key for new configurations
@@ -131,18 +128,6 @@ const onCancel = () => {
         placeholder="My Documents"
         help-text="help-text=The display name for the bucket - any name as you would like to see it listed in BC Stats LockBox."
         focus-trap
-      />
-      <TextInput
-        name="bucket"
-        label="Bucket *"
-        placeholder="bucket0123456789"
-        :help-text="'The name of the bucket given to you. For example: \'yxwgj\'.'"
-      />
-      <TextInput
-        name="endpoint"
-        label="Endpoint *"
-        placeholder="https://example.com"
-        help-text="The URL of your object storage namespace without the bucket identifier/name."
       />
       <Password
         name="adminPass"
