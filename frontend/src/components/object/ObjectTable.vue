@@ -80,6 +80,7 @@ const showInfo = (id: string) => {
   focusedElement.value = document.activeElement;
 };
 
+<!-- hide permissions
 async function showPermissions(objectId: string) {
   await permissionStore.fetchObjectPermissions({ objectId });
 
@@ -88,6 +89,7 @@ async function showPermissions(objectId: string) {
   permissionsObjectName.value = objectStore.getObject(objectId)?.name;
   focusedElement.value = document.activeElement;
 }
+-->
 
 onMounted(() => {
   loading.value = true;
@@ -341,6 +343,7 @@ const selectedFilters = (payload: any) => {
             :mode="ButtonMode.ICON"
             :ids="[data.id]"
           />
+          <!-- hide permissions
           <Button
             v-if="
               permissionStore.isObjectActionAllowed(data.id, getUserId, Permissions.MANAGE, props.bucketId as string)
@@ -353,6 +356,7 @@ const selectedFilters = (payload: any) => {
           >
             <span class="material-icons-outlined">supervisor_account</span>
           </Button>
+          -->
           <SyncButton
             label-text="Synchronize file"
             :object-id="data.id"
