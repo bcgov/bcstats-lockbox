@@ -28,6 +28,7 @@ const { getIsAuthenticated } = storeToRefs(useAuthStore());
               My Files
             </router-link>
           </li>
+          <!-- hide recycle bin
           <li
             v-if="getIsAuthenticated"
             class="mr-2"
@@ -39,6 +40,7 @@ const { getIsAuthenticated } = storeToRefs(useAuthStore());
             Recycle Bin
             </router-link>
           </li>
+          -->
           <!-- <li class="mr-2">
             <a
               target="_blank"
