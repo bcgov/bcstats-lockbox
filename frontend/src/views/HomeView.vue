@@ -138,16 +138,6 @@ const { getConfig } = storeToRefs(useConfigStore());
               <a href="mailto:IDIM.Consulting@gov.bc.ca">Provincial Identity Information Management Program</a>
               indicating your BCeID-related intentions
             </li>
-            <li>
-              You will refer to and adhere to
-              <a
-                href="https://www2.gov.bc.ca/gov/content/data/about-data-management/databc"
-                target="_blank"
-              >
-                DataBC
-              </a>
-              requirements for public file sharing
-            </li>
           </ul>
         </div>
       </div>

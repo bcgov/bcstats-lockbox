@@ -304,6 +304,7 @@ const selectedFilters = (payload: any) => {
           {{ formatDateLong(data.lastModifiedDate ?? data.createdAt) }}
         </template>
       </Column>
+      <!-- Hide public sharing toggle
       <Column
         field="publicSharing"
         header="Public"
@@ -320,6 +321,7 @@ const selectedFilters = (payload: any) => {
           />
         </template>
       </Column>
+      -->
       <Column
         header="Actions"
         header-style="min-width: 270px"
