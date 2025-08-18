@@ -78,7 +78,7 @@ onMounted(async () => {
         @keyup.enter="showBucketConfig()"
       >
         <span class="material-icons-outlined mr-2 primary">create_new_folder</span>
-        Connect bucket to BC Stats LockBox
+        Connect Storage
       </Button>
 
       <!-- Bucket config dialog -->

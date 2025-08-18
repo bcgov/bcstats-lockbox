@@ -1,6 +1,6 @@
 export const BucketConfig = Object.freeze({
-  HEADER_NEW_BUCKET: 'Configure bucket',
-  TITLE_NEW_BUCKET: 'Use this form to configure a bucket to be used in BC Stats LockBox for the first time.',
+  HEADER_NEW_BUCKET: 'Configure storage location source',
+  TITLE_NEW_BUCKET: 'Use this form to configure a bucket to be used in BC Stats LockBox for the first time.'
 });
 
 /**
