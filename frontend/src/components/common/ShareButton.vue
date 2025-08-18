@@ -102,10 +102,12 @@ const showDialog = (x: boolean) => {
           Invite someone using an invite link - the links are single-use; you must generate a new link for each user you
           intend to send this to
         </li>
+        <!-- Hide mentions of sharing publicly
         <li>
           To share publicly or with a direct link, you must set the file to public - this only works for individual
           files
         </li>
+        -->
       </ul>
     </div>
     <TabView>

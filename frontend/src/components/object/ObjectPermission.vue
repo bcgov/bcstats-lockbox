@@ -57,6 +57,7 @@ onBeforeMount(() => {
 <template>
   <TabView>
     <TabPanel header="Manage permissions">
+      <!-- Comment out the public toggle
       <div class="flex flex-row gap-6 pb-3">
         <div>
           <h3 class="pb-1">Public</h3>
@@ -75,6 +76,7 @@ onBeforeMount(() => {
           :user-id="getUserId"
         />
       </div>
+      -->
 
       <h3 class="mt-1 mb-2">User Permissions</h3>
 

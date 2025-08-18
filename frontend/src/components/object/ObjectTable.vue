@@ -80,15 +80,6 @@ const showInfo = (id: string) => {
   focusedElement.value = document.activeElement;
 };
 
-async function showPermissions(objectId: string) {
-  await permissionStore.fetchObjectPermissions({ objectId });
-
-  permissionsVisible.value = true;
-  permissionsObjectId.value = objectId;
-  permissionsObjectName.value = objectStore.getObject(objectId)?.name;
-  focusedElement.value = document.activeElement;
-}
-
 onMounted(() => {
   loading.value = true;
   lazyParams.value = {
@@ -304,6 +295,7 @@ const selectedFilters = (payload: any) => {
           {{ formatDateLong(data.lastModifiedDate ?? data.createdAt) }}
         </template>
       </Column>
+      <!-- Hide public sharing toggle
       <Column
         field="publicSharing"
         header="Public"
@@ -320,6 +312,7 @@ const selectedFilters = (payload: any) => {
           />
         </template>
       </Column>
+      -->
       <Column
         header="Actions"
         header-style="min-width: 270px"
@@ -339,6 +332,7 @@ const selectedFilters = (payload: any) => {
             :mode="ButtonMode.ICON"
             :ids="[data.id]"
           />
+          <!-- hide permissions
           <Button
             v-if="
               permissionStore.isObjectActionAllowed(data.id, getUserId, Permissions.MANAGE, props.bucketId as string)
@@ -351,6 +345,7 @@ const selectedFilters = (payload: any) => {
           >
             <span class="material-icons-outlined">supervisor_account</span>
           </Button>
+          -->
           <SyncButton
             label-text="Synchronize file"
             :object-id="data.id"

@@ -168,6 +168,7 @@ onMounted(async () => {
             :ids="[object.id]"
             :version-id="currentVersionId"
           />
+          <!-- hide the file permissions button
           <Button
             v-if="permissionStore.isObjectActionAllowed(object.id, getUserId, Permissions.MANAGE, bucketId) &&
               !isDeleted"
@@ -178,6 +179,7 @@ onMounted(async () => {
           >
             <span class="material-icons-outlined">supervisor_account</span>
           </Button>
+          -->
           <DeleteObjectButton
             v-if="permissionStore.isObjectActionAllowed(object.id, getUserId, Permissions.DELETE, bucketId)"
             class="xl"

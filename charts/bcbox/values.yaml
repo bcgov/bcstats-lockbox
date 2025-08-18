@@ -146,13 +146,13 @@ config:
 
     SERVER_CHES_APIPATH: ~
     SERVER_CHES_TOKENURL: ~
-    SERVER_CHES_FROM: ~
+    SERVER_CHES_FROM: DoNotReply.BCStatsLockBox@gov.bc.ca
 
     # SERVER_LOGFILE: ~
     SERVER_LOGLEVEL: "http"
 
     SERVER_OIDC_AUTHORITY: ~
-    SERVER_OIDC_IDENTITYKEY: ~
+    SERVER_OIDC_IDENTITYKEY: idir_user_guid,bceid_user_guid
     SERVER_OIDC_PUBLICKEY: ~
 
     SERVER_PORT: "8080"

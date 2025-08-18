@@ -229,13 +229,13 @@ const onSubmit = handleSubmit(async (values: any, { resetForm }) => {
 <template>
   <h3 class="mt-1 mb-2">Bulk add/remove</h3>
   <ul class="mb-4 pl-4">
-    <li>Adding users will add permissions in bulk to any existing emails associated with BCBox accounts</li>
+    <li>Adding users will add permissions in bulk to any existing emails associated with BC Stats LockBox accounts</li>
     <li>
       Removing users will remove all their permissions to this
       {{ props.resourceType === 'object' ? 'file' : 'folder' }}
     </li>
     <li>
-      If you include email addresses not associated with BCBox users, you can choose to send emails to invite them
+      If you include email addresses not associated with BC Stats LockBox users, you can choose to send emails to invite them
     </li>
   </ul>
 
@@ -383,7 +383,7 @@ const onSubmit = handleSubmit(async (values: any, { resetForm }) => {
       >
         Enter an email address for each person whose permissions you wish to update for this
         {{ props.resourceType === 'bucket' ? 'folder' : 'file' }}. The email address should be associated with the IDIR
-        or BCeID account they will use to sign in to BCBox.
+        or BCeID account they will use to sign in to BC Stats LockBox.
       </small>
       <ErrorMessage name="multiEmail" />
     </div>

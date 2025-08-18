@@ -133,8 +133,8 @@ const onClick = () => {
       <!-- object -->
       <li v-else>This will schedule a synchronization of any new versions or metadata found in the storage location</li>
       <li>
-        Use this if you are modifying it outside of BCBox, such as in another software application, and want to see
-        those changes reflected in BCBox
+        Use this if you are modifying it outside of BC Stats LockBox, such as in another software application, and want to see
+        those changes reflected in BC Stats LockBox
       </li>
       <li>Synchronization duration is dependent on server load</li>
     </ul>

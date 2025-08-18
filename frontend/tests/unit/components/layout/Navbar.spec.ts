@@ -56,7 +56,7 @@ describe('Navbar.vue', () => {
     expect(linkEle).toHaveLength(4);
     expect(linkEle[0].text()).toBe('Home');
     expect(linkEle[1].text()).toBe('My Files');
-    expect(linkEle[2].text()).toBe('Recycle Bin');
+    //expect(linkEle[2].text()).toBe('Recycle Bin'); // hide recycle bin
     expect(linkEle[3].text()).toBe('Help');
   });
 

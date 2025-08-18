@@ -3,16 +3,16 @@ config:
   enabled: true
   configMap:
     FRONTEND_APIPATH: api/v1
-    FRONTEND_COMS_APIPATH: https://coms-dev.api.gov.bc.ca/api/v1
+    FRONTEND_COMS_APIPATH: https://bcstatscoms-dev.apps.gov.bc.ca/api/v1
     FRONTEND_EXCLUDE_METADATA: geodrive.common.encoding,geodrive.windows.attr,geodrive.windows.secdesc,s3b-last-modified
-    FRONTEND_NOTIFICATION_BANNER: This is the DEV environment of BCBox. Uploaded files may not persist and may be deleted from the COMS database as we continue development. Please do not upload personal or private information. Thank you for your understanding as we work to improve BCBox
+    FRONTEND_NOTIFICATION_BANNER: This is the DEV environment of BC Stats LockBox. Uploaded files may not persist and may be deleted from the database as we continue development. Please do not upload personal or private information. Thank you for your understanding as we work to improve BC Stats LockBox.
     FRONTEND_OIDC_AUTHORITY: https://dev.loginproxy.gov.bc.ca/auth/realms/standard
-    FRONTEND_OIDC_CLIENTID: bc-box-4555
+    FRONTEND_OIDC_CLIENTID: bc-stats-coms-bc-box-4936
     SERVER_APIPATH: /api/v1
     SERVER_BODYLIMIT: 30mb
     SERVER_CHES_APIPATH: https://ches-dev.api.gov.bc.ca/api/v1
     SERVER_CHES_TOKENURL: https://dev.loginproxy.gov.bc.ca/auth/realms/comsvcauth/protocol/openid-connect/token
-    SERVER_CHES_FROM: DoNotReply.BCBox@gov.bc.ca
+    SERVER_CHES_FROM: DoNotReply.BCStatsLockBox@gov.bc.ca
     # SERVER_LOGFILE: ~
     SERVER_LOGLEVEL: http
     SERVER_OIDC_AUTHORITY: https://dev.loginproxy.gov.bc.ca/auth/realms/standard
