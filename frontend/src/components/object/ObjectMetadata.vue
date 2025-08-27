@@ -67,17 +67,13 @@ const showModal = () => {
 };
 
 const submitModal = async (values: ObjectMetadataTagFormType) => {
-  let newVersion;
-  // If versionId is set, use it; otherwise, omit to target latest or create new
-  if (versionId.value) {
-    newVersion = await metadataStore.replaceMetadata(props.objectId, values.metadata ?? [], versionId.value);
-  } else {
-    newVersion = await metadataStore.replaceMetadata(props.objectId, values.metadata ?? []);
-  }
-  // If the object did not have metadata before, ensure the reference is created
-  if (!obj.value?.metadata || obj.value.metadata.length === 0) {
-    obj.value.metadata = values.metadata ?? [];
-  }
+  // eslint-disable-next-line no-console
+  console.log('Submitting metadata update:', {
+    objectId: props.objectId,
+    metadata: values.metadata ?? [],
+    versionId: versionId.value
+  });
+  const newVersion = await metadataStore.replaceMetadata(props.objectId, values.metadata ?? [], versionId.value);
   emit('on-metadata-success', newVersion);
   closeModal();
 };
