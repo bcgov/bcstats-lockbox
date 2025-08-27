@@ -33,9 +33,11 @@ const { getMetadataByObjectId } = storeToRefs(metadataStore);
 // State
 const obj = computed(() => objectStore.getObject(props.objectId));
 const versionId = defineModel<string>('versionId');
-const metadata  = computed(() => (versionId.value ?
-  getMetadataByVersionId.value(versionId.value) :
-  getMetadataByObjectId.value(props.objectId))?.metadata ?? []);
+const metadata = computed(
+  () =>
+    (versionId.value ? getMetadataByVersionId.value(versionId.value) : getMetadataByObjectId.value(props.objectId))
+      ?.metadata ?? []
+);
 const editing: Ref<boolean> = ref(false);
 const formData: Ref<ObjectMetadataTagFormType> = ref({
   filename: ''
@@ -65,7 +67,17 @@ const showModal = () => {
 };
 
 const submitModal = async (values: ObjectMetadataTagFormType) => {
-  const newVersion = await metadataStore.replaceMetadata(props.objectId, values.metadata ?? [], versionId.value);
+  let newVersion;
+  // If versionId is set, use it; otherwise, omit to target latest or create new
+  if (versionId.value) {
+    newVersion = await metadataStore.replaceMetadata(props.objectId, values.metadata ?? [], versionId.value);
+  } else {
+    newVersion = await metadataStore.replaceMetadata(props.objectId, values.metadata ?? []);
+  }
+  // If the object did not have metadata before, ensure the reference is created
+  if (!obj.value?.metadata || obj.value.metadata.length === 0) {
+    obj.value.metadata = values.metadata ?? [];
+  }
   emit('on-metadata-success', newVersion);
   closeModal();
 };
@@ -78,7 +90,7 @@ const closeModal = () => {
 <template>
   <div class="grid details-grid grid-nogutter mb-2">
     <div
-      v-if="metadata.length > 0 "
+      v-if="metadata.length > 0"
       class="col-12"
     >
       <h2>Metadata</h2>
