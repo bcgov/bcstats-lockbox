@@ -67,13 +67,18 @@ const showModal = () => {
 };
 
 const submitModal = async (values: ObjectMetadataTagFormType) => {
-  // eslint-disable-next-line no-console
+  // Find the s3VersionId for the selected versionId
+  let s3VersionId: string | undefined = undefined;
+  if (versionId.value) {
+    const version = versionStore.getVersion(versionId.value);
+    s3VersionId = version?.s3VersionId;
+  }
   console.log('Submitting metadata update:', {
     objectId: props.objectId,
     metadata: values.metadata ?? [],
-    versionId: versionId.value
+    s3VersionId
   });
-  const newVersion = await metadataStore.replaceMetadata(props.objectId, values.metadata ?? [], versionId.value);
+  const newVersion = await metadataStore.replaceMetadata(props.objectId, values.metadata ?? [], s3VersionId);
   emit('on-metadata-success', newVersion);
   closeModal();
 };
