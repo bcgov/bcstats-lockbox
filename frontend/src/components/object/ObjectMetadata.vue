@@ -67,18 +67,13 @@ const showModal = () => {
 };
 
 const submitModal = async (values: ObjectMetadataTagFormType) => {
-  // Find the s3VersionId for the selected versionId
-  let s3VersionId: string | undefined = undefined;
-  if (versionId.value) {
-    const version = versionStore.getVersion(versionId.value);
-    s3VersionId = version?.s3VersionId;
-  }
+  // eslint-disable-next-line no-console
   console.log('Submitting metadata update:', {
     objectId: props.objectId,
     metadata: values.metadata ?? [],
-    s3VersionId
+    versionId: versionId.value
   });
-  const newVersion = await metadataStore.replaceMetadata(props.objectId, values.metadata ?? [], s3VersionId);
+  const newVersion = await metadataStore.replaceMetadata(props.objectId, values.metadata ?? [], versionId.value);
   emit('on-metadata-success', newVersion);
   closeModal();
 };
@@ -103,7 +98,7 @@ const closeModal = () => {
       :value="meta.value"
     />
   </div>
-  <div
+  <!--<div
     v-if="
       editable && permissionStore.isObjectActionAllowed(props.objectId, getUserId, Permissions.UPDATE, obj?.bucketId)
     "
@@ -118,7 +113,7 @@ const closeModal = () => {
       />
       Edit metadata
     </Button>
-  </div>
+  </div>-->
 
   <Dialog
     v-model:visible="editing"
