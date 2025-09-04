@@ -42,10 +42,10 @@ export const useBucketStore = defineStore('bucket', () => {
     }
   }
 
-  async function createBucketChild(parentBucketId: string, subKey: string, bucketName: string, adminPass: string) {
+  async function createBucketChild(parentBucketId: string, subKey: string, bucketName: string) {
     try {
       appStore.beginIndeterminateLoading();
-      return await bucketService.createBucketChild(parentBucketId, subKey, bucketName, adminPass);
+      return await bucketService.createBucketChild(parentBucketId, subKey, bucketName);
     } finally {
       appStore.endIndeterminateLoading();
     }
@@ -104,10 +104,6 @@ export const useBucketStore = defineStore('bucket', () => {
     }
   }
 
-  function findBucketById(bucketId: string) {
-    return state.buckets.value.find((x) => x.bucketId === bucketId);
-  }
-
   async function updateBucket(bucketId: string, bucket: Bucket) {
     try {
       appStore.beginIndeterminateLoading();
@@ -154,7 +150,6 @@ export const useBucketStore = defineStore('bucket', () => {
     createBucketChild,
     deleteBucket,
     fetchBuckets,
-    findBucketById,
     syncBucket,
     syncBucketStatus,
     updateBucket

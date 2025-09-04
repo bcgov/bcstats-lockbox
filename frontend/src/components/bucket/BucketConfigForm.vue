@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import { Form } from 'vee-validate';
@@ -21,7 +22,6 @@ export type BucketForm = {
   endpoint?: string;
   key?: string;
   secretAccessKey?: string;
-  adminPass?: string;
 };
 
 // Props
@@ -42,19 +42,24 @@ const { getUserId } = storeToRefs(useAuthStore());
 
 // Default form values
 const initialValues: BucketForm = {
+  accessKeyId: props.bucket?.accessKeyId,
+  bucket: props.bucket?.bucket,
   bucketName: props.bucket?.bucketName,
+  endpoint: props.bucket?.endpoint,
   key: props.bucket?.key,
-  adminPass: props.bucket?.adminPass
+  secretAccessKey: props.bucket?.secretAccessKey
 };
 
 // Form validation schema
 const schema = object({
+  accessKeyId: string().max(255).required().label('Access Key ID'),
+  bucket: string().max(255).required().label('Bucket'),
   bucketName: string().max(255).required().label('Folder name'),
+  endpoint: string().max(255).required().label('Endpoint'),
   key: string()
     .matches(/^[^\\]+$/, { excludeEmptyString: true, message: 'Path must not contain backslashes' })
     .max(255),
-  adminPass: string().max(255).required().label('Administrator Password')
-
+  secretAccessKey: string().max(255).required().label('Secret Access Key')
 });
 
 // Actions
@@ -63,8 +68,11 @@ const toast = useToast();
 const onSubmit = async (values: any) => {
   try {
     const formBucket = {
+      accessKeyId: values.accessKeyId,
+      bucket: values.bucket,
       bucketName: values.bucketName,
-      adminPass: values.adminPass,
+      endpoint: values.endpoint,
+      secretAccessKey: values.secretAccessKey
     } as Bucket;
 
     // Only add key for new configurations
@@ -126,21 +134,41 @@ const onCancel = () => {
         name="bucketName"
         label="Folder name *"
         placeholder="My Documents"
-        help-text="help-text=The display name for the bucket - any name as you would like to see it listed in BC Stats LockBox."
+        help-text="Your custom display name for the storage location,
+          shown in BCBox as a folder. Any name as you would like to see it listed in BCBox."
         focus-trap
       />
+      <TextInput
+        name="bucket"
+        label="Bucket *"
+        placeholder="bucket0123456789"
+        :help-text="'The name of the bucket given to you. For example: \'yxwgj\'.'"
+      />
+      <TextInput
+        name="endpoint"
+        label="Endpoint *"
+        placeholder="https://example.com"
+        help-text="The URL of your object storage namespace without the bucket identifier/name."
+      />
       <Password
-        name="adminPass"
-        label="Administrator Password *"
+        name="accessKeyId"
+        label="Access key identifier / User account *"
+        placeholder="username"
+        help-text="User/Account identifier or username."
+      />
+      <Password
+        name="secretAccessKey"
+        label="Secret access key *"
         placeholder="password"
-        help-text="Administrator password used to create/update the bucket."
+        help-text="A password used to access the bucket."
       />
       <TextInput
         name="key"
-        label="Bucket sub-path *"
+        label="Path"
         placeholder="/"
-        help-text="Sets the bucket to mount at a specific subdirectory.
-          This value cannot be changed after the bucket is configured."
+        help-text="Optionally mounts the storage location at a specific path.
+          A folder will be created if it does not already exist.<br />
+          This will default to the root '/' if not provided."
         :disabled="!!props.bucket"
       />
       <Button
