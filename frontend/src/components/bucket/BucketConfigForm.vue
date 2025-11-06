@@ -22,6 +22,7 @@ export type BucketForm = {
   endpoint?: string;
   key?: string;
   secretAccessKey?: string;
+  adminPass?: string;
 };
 
 // Props
@@ -42,24 +43,30 @@ const { getUserId } = storeToRefs(useAuthStore());
 
 // Default form values
 const initialValues: BucketForm = {
-  accessKeyId: props.bucket?.accessKeyId,
-  bucket: props.bucket?.bucket,
   bucketName: props.bucket?.bucketName,
-  endpoint: props.bucket?.endpoint,
   key: props.bucket?.key,
-  secretAccessKey: props.bucket?.secretAccessKey
+  adminPass: props.bucket?.adminPass
+  //accessKeyId: props.bucket?.accessKeyId,
+  //bucket: props.bucket?.bucket,
+  //bucketName: props.bucket?.bucketName,
+  //endpoint: props.bucket?.endpoint,
+  //key: props.bucket?.key,
+  //secretAccessKey: props.bucket?.secretAccessKey
 };
 
 // Form validation schema
 const schema = object({
-  accessKeyId: string().max(255).required().label('Access Key ID'),
-  bucket: string().max(255).required().label('Bucket'),
-  bucketName: string().max(255).required().label('Folder name'),
-  endpoint: string().max(255).required().label('Endpoint'),
-  key: string()
-    .matches(/^[^\\]+$/, { excludeEmptyString: true, message: 'Path must not contain backslashes' })
-    .max(255),
-  secretAccessKey: string().max(255).required().label('Secret Access Key')
+  bucketName: string().max(255).required().label('Bucket name'),
+  key: string().matches(/^[^\\]+$/, 'Sub-path must not contain backslashes').required().max(255).label('Sub-path'),
+  adminPass: string().max(255).required().label('Admin Password')
+  //accessKeyId: string().max(255).required().label('Access Key ID'),
+  //bucket: string().max(255).required().label('Bucket'),
+  //bucketName: string().max(255).required().label('Folder name'),
+  //endpoint: string().max(255).required().label('Endpoint'),
+  //key: string()
+  //  .matches(/^[^\\]+$/, { excludeEmptyString: true, message: 'Path must not contain backslashes' })
+  //  .max(255),
+  //secretAccessKey: string().max(255).required().label('Secret Access Key')
 });
 
 // Actions
@@ -68,11 +75,13 @@ const toast = useToast();
 const onSubmit = async (values: any) => {
   try {
     const formBucket = {
-      accessKeyId: values.accessKeyId,
-      bucket: values.bucket,
+      //accessKeyId: values.accessKeyId,
+      //bucket: values.bucket,
+      //bucketName: values.bucketName,
+      //endpoint: values.endpoint,
+      //secretAccessKey: values.secretAccessKey
       bucketName: values.bucketName,
-      endpoint: values.endpoint,
-      secretAccessKey: values.secretAccessKey
+      adminPass: values.adminPass,
     } as Bucket;
 
     // Only add key for new configurations
@@ -134,35 +143,24 @@ const onCancel = () => {
         name="bucketName"
         label="Folder name *"
         placeholder="My Documents"
-        help-text="Your custom display name for the storage location,
-          shown in BCBox as a folder. Any name as you would like to see it listed in BCBox."
+        help-text="The display name for the bucket - any name as you would like to see it listed in BC Stats LockBox."
         focus-trap
       />
-      <TextInput
-        name="bucket"
-        label="Bucket *"
-        placeholder="bucket0123456789"
-        :help-text="'The name of the bucket given to you. For example: \'yxwgj\'.'"
-      />
-      <TextInput
-        name="endpoint"
-        label="Endpoint *"
-        placeholder="https://example.com"
-        help-text="The URL of your object storage namespace without the bucket identifier/name."
-      />
       <Password
-        name="accessKeyId"
-        label="Access key identifier / User account *"
-        placeholder="username"
-        help-text="User/Account identifier or username."
-      />
-      <Password
-        name="secretAccessKey"
-        label="Secret access key *"
+        name="adminPass"
+        label="Administrator Password *"
         placeholder="password"
-        help-text="A password used to access the bucket."
+        help-text="Administrator password used to create/update the bucket."
       />
       <TextInput
+        name="key"
+        label="Bucket sub-path *"
+        placeholder="/"
+        help-text="Sets the bucket to mount at a specific subdirectory.
+          This value cannot be changed after the bucket is configured."
+        :disabled="!!props.bucket"
+      />
+      <!--<TextInput
         name="key"
         label="Path"
         placeholder="/"
@@ -170,7 +168,7 @@ const onCancel = () => {
           A folder will be created if it does not already exist.<br />
           This will default to the root '/' if not provided."
         :disabled="!!props.bucket"
-      />
+      />-->
       <Button
         class="p-button mt-2 mr-1"
         label="Apply"
