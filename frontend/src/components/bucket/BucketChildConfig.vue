@@ -133,6 +133,12 @@ const onCancel = () => {
         help-text="Your custom display name for the subfolder - any name as you would like to see it listed in BCBox."
         class="child-input"
       />
+      <Password
+        name="adminPass"
+        label="Administrator Password *"
+        placeholder="password"
+        help-text="Administrator password used to create/update the bucket."
+      />
       <Button
         class="p-button mt-2 mr-2"
         label="Save"
