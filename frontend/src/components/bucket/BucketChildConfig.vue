@@ -27,6 +27,7 @@ const { focusedElement } = storeToRefs(useNavStore());
 const validationMessages: Ref<Array<string>> = ref([]);
 const schema = object({
   bucketName: string().required().max(255).label('Folder display name'),
+  adminPass: string().max(255).required().label('Admin Password'),
   subKey: string()
     .required()
     .matches(/^[^\\]+$/, { excludeEmptyString: true, message: 'Path must not contain backslashes' })
@@ -117,12 +118,7 @@ const onCancel = () => {
       >
         {{ msg }}
       </Message>
-      <Password
-        name="adminPass"
-        label="Administrator Password *"
-        placeholder="password"
-        help-text="Administrator password used to create/update the bucket."
-      />
+
       <TextInput
         name="subKey"
         label="Path"
@@ -133,6 +129,12 @@ const onCancel = () => {
           Folder levels are supported using '/' between levels (for example: 2024/January/my-documents).`"
         class="child-input"
         focus-trap
+      />
+      <Password
+        name="adminPass"
+        label="Administrator Password *"
+        placeholder="password"
+        help-text="Administrator password used to create/update the bucket."
       />
       <TextInput
         name="bucketName"
