@@ -47,7 +47,8 @@ const onSubmit = async (values: any) => {
   try {
     const formData = {
       bucketName: values.bucketName.trim(),
-      subKey: values.subKey.trim()
+      subKey: values.subKey.trim(),
+      adminPass: values.adminPass.trim()
     };
     // create bucket
     await bucketStore.createBucketChild(props.parentBucket.bucketId, formData.subKey, formData.bucketName);
