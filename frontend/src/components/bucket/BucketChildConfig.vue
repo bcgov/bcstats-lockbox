@@ -100,6 +100,7 @@ const onCancel = () => {
     </h3>
     <ul class="mt-0 pl-3">
       <li>Sets a subfolder to appear within a folder</li>
+      <li>Test change</li>
     </ul>
     <Form
       id="add-subfolder"
@@ -115,6 +116,12 @@ const onCancel = () => {
       >
         {{ msg }}
       </Message>
+      <Password
+        name="adminPass"
+        label="Administrator Password *"
+        placeholder="password"
+        help-text="Administrator password used to create/update the bucket."
+      />
       <TextInput
         name="subKey"
         label="Path"
@@ -132,12 +139,6 @@ const onCancel = () => {
         placeholder="My Documents"
         help-text="Your custom display name for the subfolder - any name as you would like to see it listed in BCBox."
         class="child-input"
-      />
-      <Password
-        name="adminPass"
-        label="Administrator Password *"
-        placeholder="password"
-        help-text="Administrator password used to create/update the bucket."
       />
       <Button
         class="p-button mt-2 mr-2"
