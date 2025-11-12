@@ -5,6 +5,7 @@ import { ref } from 'vue';
 import { object, string } from 'yup';
 
 import TextInput from '@/components/form/TextInput.vue';
+import Password from '@/components/form/Password.vue';
 import { Button, Dialog, Message, useToast } from '@/lib/primevue';
 import { useAuthStore, useBucketStore, useNavStore } from '@/store';
 import { onDialogHide } from '@/utils/utils';
