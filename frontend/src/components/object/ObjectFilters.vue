@@ -129,7 +129,7 @@ const searchTagging = async () => {
 </script>
 
 <template>
-  <MultiSelect
+  <!--<MultiSelect
     v-model="selectedMetadata"
     :options="metadataValues"
     :loading="searching"
@@ -143,7 +143,7 @@ const searchTagging = async () => {
     :show-toggle-all="false"
     @before-show="searchMetadata"
     @change="selectedMetadataChanged"
-  />
+  />-->
 
   <MultiSelect
     v-model="selectedTags"
