@@ -51,7 +51,8 @@ const onSubmit = async (values: any) => {
       adminPass: values.adminPass.trim()
     };
     // create bucket
-    await bucketStore.createBucketChild(props.parentBucket.bucketId, formData.subKey, formData.bucketName);
+    await bucketStore.createBucketChild(props.parentBucket.bucketId, formData.subKey, formData.bucketName,
+      formData.adminPass);
     // refresh stores
     await bucketStore.fetchBuckets({ userId: getUserId.value, objectPerms: true });
     showDialog(false);
