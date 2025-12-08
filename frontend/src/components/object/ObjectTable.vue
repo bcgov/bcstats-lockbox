@@ -85,7 +85,7 @@ onMounted(() => {
   lazyParams.value = {
     first: 0,
     rows: lazyDataTable.value.rows,
-    sortField: 'lastModifiedDate', // Changed from 'updatedAt'
+    sortField: 'lastModifiedDate', // Changed from 'lastModifiedDate'
     page: lazyDataTable.value.page,
     sortOrder: 'desc',
     filters: filters
@@ -113,7 +113,7 @@ const loadLazyData = (event?: any) => {
     .then((r: any) => {
       tableData.value = r.data.map((item: any) => ({
         ...item,
-        updatedAt: item.updatedAt === null ? item.createdAt : item.updatedAt
+        lastModifiedDate: item.lastModifiedDate === null ? item.createdAt : item.lastModifiedDate
       }));
       totalRecords.value = +r?.headers['x-total-rows'];
       // add objects to store
@@ -286,7 +286,7 @@ const selectedFilters = (payload: any) => {
         </template>
       </Column>
       <Column
-        field="updatedAt"
+        field="lastModifiedDate"
         header="Updated date"
         style="width: 300px"
         sortable
