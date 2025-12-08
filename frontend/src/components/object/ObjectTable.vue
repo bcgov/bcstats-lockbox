@@ -85,7 +85,7 @@ onMounted(() => {
   lazyParams.value = {
     first: 0,
     rows: lazyDataTable.value.rows,
-    sortField: 'updatedAt',
+    sortField: 'lastModifiedDate', // Changed from 'updatedAt'
     page: lazyDataTable.value.page,
     sortOrder: 'desc',
     filters: filters
@@ -189,7 +189,7 @@ const selectedFilters = (payload: any) => {
       responsive-layout="scroll"
       :rows="10"
       :rows-per-page-options="[10, 20, 50]"
-      sort-field="updatedAt"
+      sort-field="lastModifiedDate"
       :sort-order="-1"
       :global-filter-fields="['name']"
       :first="first"
