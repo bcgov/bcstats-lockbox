@@ -292,6 +292,7 @@ const selectedFilters = (payload: any) => {
         sortable
       >
         <template #body="{ data }">
+          {{ console.log(data.lastModifiedDate) }}
           {{ formatDateLong(data.lastModifiedDate ?? data.createdAt) }}
         </template>
       </Column>
