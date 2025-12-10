@@ -85,7 +85,7 @@ onMounted(() => {
   lazyParams.value = {
     first: 0,
     rows: lazyDataTable.value.rows,
-    sortField: 'updatedAt',
+    sortField: 'createdAt',
     page: lazyDataTable.value.page,
     sortOrder: 'desc',
     filters: filters
@@ -113,7 +113,7 @@ const loadLazyData = (event?: any) => {
     .then((r: any) => {
       tableData.value = r.data.map((item: any) => ({
         ...item,
-        updatedAt: item.updatedAt === null ? item.createdAt : item.updatedAt
+        createdAt: item.createdAt === null ? item.createdAt : item.createdAt
       }));
       totalRecords.value = +r?.headers['x-total-rows'];
       // add objects to store
@@ -189,7 +189,7 @@ const selectedFilters = (payload: any) => {
       responsive-layout="scroll"
       :rows="10"
       :rows-per-page-options="[10, 20, 50]"
-      sort-field="updatedAt"
+      sort-field="createdAt"
       :sort-order="-1"
       :global-filter-fields="['name']"
       :first="first"
@@ -286,13 +286,13 @@ const selectedFilters = (payload: any) => {
         </template>
       </Column>
       <Column
-        field="updatedAt"
-        header="Updated date"
+        field="createdAt"
+        header="Upload date"
         style="width: 300px"
         sortable
       >
         <template #body="{ data }">
-          {{ formatDateLong(data.updatedAt ?? data.createdAt) }}
+          {{ formatDateLong(data.createdAt ?? data.createdAt) }}
         </template>
       </Column>
       <!-- Hide public sharing toggle
