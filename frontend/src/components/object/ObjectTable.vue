@@ -113,7 +113,7 @@ const loadLazyData = (event?: any) => {
     .then((r: any) => {
       tableData.value = r.data.map((item: any) => ({
         ...item,
-        updatedAt: item.updatedAt === null ? item.createdAt : item.updatedAt
+        createdAtdAt: item.createdAt === null ? item.createdAt : item.createdAt
       }));
       totalRecords.value = +r?.headers['x-total-rows'];
       // add objects to store
@@ -417,4 +417,3 @@ const selectedFilters = (payload: any) => {
   height: 2.4rem;
 }
 </style>
-
