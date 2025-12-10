@@ -286,13 +286,13 @@ const selectedFilters = (payload: any) => {
         </template>
       </Column>
       <Column
-        field="updatedAt"
+        field="createdAt"
         header="Updated date"
         style="width: 300px"
         sortable
       >
         <template #body="{ data }">
-          {{ formatDateLong(data.lastModifiedDate ?? data.createdAt) }}
+          {{ formatDateLong(data.createdAt) }}
         </template>
       </Column>
       <!-- Hide public sharing toggle
