@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { storeToRefs } from 'pinia';
 
 import { ObjectMetadataTagForm } from '@/components/object';
 import { Button, Dialog, useConfirm, useToast } from '@/lib/primevue';
-import { useAppStore, useMetadataStore, useObjectStore, useTagStore } from '@/store';
+import { useAppStore, useMetadataStore, useObjectStore, useTagStore, useVersionStore } from '@/store';
 
 import type { Ref } from 'vue';
 import type { ObjectMetadataTagFormType } from '@/components/object/ObjectMetadataTagForm.vue';
 
 // Props
 type Props = {
-  bucketId: string,
-  objectId: string
+  bucketId: string;
+  objectId: string;
 };
 
 const props = withDefaults(defineProps<Props>(), {});
@@ -24,8 +25,16 @@ const appStore = useAppStore();
 const metadataStore = useMetadataStore();
 const objectStore = useObjectStore();
 const tagStore = useTagStore();
+const versionStore = useVersionStore();
+
+// Getters
+const { getIsVersioningEnabled } = storeToRefs(versionStore);
 
 // State
+const { getObject } = storeToRefs(objectStore);
+const { getTaggingByObjectId } = storeToRefs(tagStore);
+const { getMetadataByObjectId } = storeToRefs(metadataStore);
+
 const fileInput: Ref<any> = ref(null);
 const file: Ref<File | undefined> = ref(undefined);
 
@@ -41,12 +50,19 @@ const confirm = useConfirm();
 const toast = useToast();
 
 const confirmUpdate = () => {
+  let confirmMessage = 'Please confirm that you want to upload a new version.';
+  if (!getIsVersioningEnabled.value(props.objectId)) {
+    confirmMessage = 'This is a non-versioned bucket. ' + 'Uploading a new version will overwrite the current version.';
+  }
   confirm.require({
-    message: 'Please confirm that you want to upload a new version.',
+    message: confirmMessage,
     header: 'Upload new version',
     acceptLabel: 'Confirm',
     rejectLabel: 'Cancel',
-    accept: () => { onUpload(); closeModal(); }
+    accept: () => {
+      onUpload();
+      closeModal();
+    }
   });
 };
 
@@ -62,11 +78,11 @@ const onSelectFile = () => {
 
 const onUpload = async () => {
   try {
-    if( file.value ) {
+    if (file.value) {
       toast.info('File upload starting...');
       appStore.beginUploading();
 
-      await objectStore.updateObject(
+      const newVersionId = await objectStore.updateObject(
         props.objectId,
         file.value,
         { metadata: objectMetadata },
@@ -77,19 +93,19 @@ const onUpload = async () => {
       // No finally block as we need this called before potential navigation
       appStore.endUploading();
 
-      emit('on-file-uploaded');
+      emit('on-file-uploaded', newVersionId);
       toast.success('File uploaded');
     }
   } catch (error: any) {
     appStore.endUploading();
-    toast.error(`File upload: ${file.value?.name}`, error);
+    toast.error(`File upload: ${file.value?.name}`, error.response?.data.detail ?? error, { life: 0 });
   }
 };
 
 const showModal = () => {
-  formData.value.filename = objectStore.findObjectById(props.objectId)?.name ?? '';
-  formData.value.metadata = metadataStore.findMetadataByObjectId(props.objectId)?.metadata;
-  formData.value.tagset = tagStore.findTaggingByObjectId(props.objectId)?.tagset;
+  formData.value.filename = getObject.value(props.objectId)?.name ?? '';
+  formData.value.metadata = getMetadataByObjectId.value(props.objectId)?.metadata;
+  formData.value.tagset = getTaggingByObjectId.value(props.objectId)?.tagset;
 
   editing.value = true;
 };
@@ -110,10 +126,12 @@ const closeModal = () => {
     outlined
     @click="onSelectFile"
   >
-    <font-awesome-icon
-      icon="fa-solid fa-upload"
-      class="mr-1"
-    />
+    <span
+      id="upload-panel-label"
+      class="material-icons-outlined mr-1"
+    >
+      file_upload
+    </span>
     Upload new version
   </Button>
   <input
@@ -122,7 +140,7 @@ const closeModal = () => {
     style="display: none"
     accept="*"
     @change="onChange"
-    @click="(event: any) => event.target.value = null"
+    @click="(event: any) => (event.target.value = null)"
   />
 
   <!-- eslint-disable vue/no-v-model-argument -->
@@ -130,7 +148,7 @@ const closeModal = () => {
     v-model:visible="editing"
     :draggable="false"
     :modal="true"
-    class="bcbox-info-dialog permissions-modal"
+    class="bcbox-info-dialog"
   >
     <!-- eslint-enable vue/no-v-model-argument -->
     <template #header>

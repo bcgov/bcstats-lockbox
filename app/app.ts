@@ -1,13 +1,19 @@
 import compression from 'compression';
 import config from 'config';
+import cors from 'cors';
 import express from 'express';
+import helmet from 'helmet';
 import { join } from 'path';
-// @ts-expect-error api-problem lacks a defined interface; code still works fine
+// @ts-expect-error 7016 api-problem lacks a defined interface; code still works fine
 import Problem from 'api-problem';
 import querystring from 'querystring';
+import { rateLimit } from 'express-rate-limit';
 
+import { name as appName, version as appVersion } from './package.json';
+import { DEFAULTCORS } from './src/components/constants';
 import { getLogger, httpLogger } from './src/components/log';
 import { getGitRevision, readIdpList } from './src/components/utils';
+import v1Router from './src/routes/v1';
 
 import type { Request, Response } from 'express';
 
@@ -23,8 +29,30 @@ const state = {
 const appRouter = express.Router();
 const app = express();
 app.use(compression());
+app.use(cors(DEFAULTCORS));
 app.use(express.json({ limit: config.get('server.bodyLimit') }));
 app.use(express.urlencoded({ extended: true }));
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        'default-src': [
+          "'self'", // eslint-disable-line
+          new URL(config.get('frontend.oidc.authority')).origin,
+          new URL(config.get('frontend.coms.apiPath')).origin
+        ]
+      }
+    }
+  })
+);
+
+// rate limiting applied to all routes.
+// Current limit: 1000 requests/minute
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 1000,
+});
+app.use(limiter);
 
 // Skip if running tests
 if (process.env.NODE_ENV !== 'test') {
@@ -49,7 +77,7 @@ appRouter.get('/config', (_req: Request, res: Response, next: (err: unknown) => 
       ...config.get('frontend'),
       gitRev: state.gitRev,
       idpList: state.idpList,
-      version: process.env.npm_package_version
+      version: appVersion
     });
   } catch (err) {
     next(err);
@@ -64,9 +92,9 @@ appRouter.get('/api', (_req: Request, res: Response): void => {
     res.status(200).json({
       app: {
         gitRev: state.gitRev,
-        name: process.env.npm_package_name,
+        name: appName,
         nodeVersion: process.version,
-        version: process.env.npm_package_version
+        version: appVersion
       },
       endpoints: ['/api/v1'],
       versions: [1]
@@ -74,8 +102,12 @@ appRouter.get('/api', (_req: Request, res: Response): void => {
   }
 });
 
+// v1 Router
+appRouter.use(config.get('server.apiPath'), v1Router);
+
 // Host the static frontend assets
-appRouter.use('/', express.static(join(__dirname, 'dist')));
+// This route assumes being executed from '/sbin'
+appRouter.use('/', express.static(join(__dirname, '../dist')));
 
 // Mount application endpoints
 app.use('/', appRouter);
@@ -91,7 +123,7 @@ app.use((err: Problem, _req: Request, res: Response, _next: () => void): void =>
     err.send(res, null);
   } else {
     new Problem(500, 'Server Error', {
-      detail: (err.message) ? err.message : err
+      detail: err.message ? err.message : err
     }).send(res);
   }
 });

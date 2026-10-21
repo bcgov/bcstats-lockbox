@@ -32,27 +32,40 @@ onBeforeMount(async () => {
   window.addEventListener('beforeunload', preventNav);
 });
 
-onBeforeUnmount( () => {
+onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', preventNav);
 });
 
 // Top level error handler
 onErrorCaptured((e: Error) => {
   const toast = useToast();
-  toast.error('Error', e.message);
+  toast.error('Error', e.message, { life: 0 });
 });
 </script>
 
 <template>
-  <ConfirmDialog />
-  <ProgressLoader v-if="getIsLoading" />
-  <Toast />
-  <AppLayout>
-    <template #nav>
-      <Navbar />
-    </template>
-    <template #main>
-      <RouterView v-if="ready" />
-    </template>
-  </AppLayout>
+  <div class="container">
+    <ConfirmDialog />
+    <ProgressLoader v-if="getIsLoading" />
+    <Toast />
+
+    <AppLayout>
+      <template #nav>
+        <Navbar />
+      </template>
+      <template #main>
+        <RouterView v-if="ready" />
+      </template>
+    </AppLayout>
+  </div>
 </template>
+
+<style scoped>
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+}
+</style>

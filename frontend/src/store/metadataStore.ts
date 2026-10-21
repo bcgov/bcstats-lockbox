@@ -10,9 +10,9 @@ import type { Ref } from 'vue';
 import type { GetMetadataOptions, Metadata, MetadataPair } from '@/types';
 
 export type MetadataStoreState = {
-  metadata: Ref<Array<Metadata>>,
-  metadataSearchResults: Ref<Array<Metadata>>
-}
+  metadata: Ref<Array<Metadata>>;
+  metadataSearchResults: Ref<Array<Metadata>>;
+};
 
 export const useMetadataStore = defineStore('metadata', () => {
   const appStore = useAppStore();
@@ -27,6 +27,9 @@ export const useMetadataStore = defineStore('metadata', () => {
   // Getters
   const getters = {
     getMetadata: computed(() => state.metadata.value),
+    getMetadataByObjectId: computed(
+      () => (objectId: string) => state.metadata.value.find((x: Metadata) => x.objectId === objectId)
+    ),
     getMetadataSearchResults: computed(() => state.metadataSearchResults.value)
   };
 
@@ -38,37 +41,30 @@ export const useMetadataStore = defineStore('metadata', () => {
       const response = (await objectService.getMetadata(null, params)).data;
 
       // Remove old values matching search parameters
-      const matches = (x: Metadata) => (
-        (!params.objectId ||
-          (Array.isArray(params.objectId) && params.objectId.some((y: string) => x.objectId === y)) ||
-          (!Array.isArray(params.objectId) && params.objectId === x.objectId))
-      );
+      const matches = (x: Metadata) =>
+        !params.objectId ||
+        (Array.isArray(params.objectId) && params.objectId.some((y: string) => x.objectId === y)) ||
+        (!Array.isArray(params.objectId) && params.objectId === x.objectId);
 
       const [, difference] = partition(state.metadata.value, matches);
 
       // Merge and assign
       state.metadata.value = difference.concat(response);
-    }
-    catch (error: any) {
-      toast.error('Fetching metadata', error);
-    }
-    finally {
+    } catch (error: any) {
+      toast.error('Fetching metadata', error.response?.data.detail ?? error, { life: 0 });
+    } finally {
       appStore.endIndeterminateLoading();
     }
   }
 
-  function findMetadataByObjectId(objectId: string) {
-    return state.metadata.value.find((x: Metadata) => x.objectId === objectId);
-  }
-
   function findValue(objectId: string, key: string) {
-    return findMetadataByObjectId(objectId)?.metadata.find(x => x.key === key)?.value;
+    return getters.getMetadataByObjectId.value(objectId)?.metadata.find((x) => x.key === key)?.value;
   }
 
   async function replaceMetadata(
     objectId: string,
     metadata: Array<{ key: string; value: string }>,
-    versionId?: string,
+    versionId?: string
   ) {
     try {
       appStore.beginIndeterminateLoading();
@@ -83,25 +79,20 @@ export const useMetadataStore = defineStore('metadata', () => {
 
       await objectService.replaceMetadata(objectId, metadata, versionId);
       await fetchMetadata({ objectId: objectId });
-    }
-    catch (error: any) {
-      toast.error('Updating metadata', error);
-    }
-    finally {
+    } catch (error: any) {
+      toast.error('Updating metadata', error.response?.data.detail ?? error, { life: 0 });
+    } finally {
       appStore.endIndeterminateLoading();
     }
   }
 
-  async function searchMetadata(
-    metadataSet: Array<MetadataPair> = [],
-  ) {
+  async function searchMetadata(metadataSet: Array<MetadataPair> = [], bucketId?: string) {
     try {
       state.metadataSearchResults.value = [];
-      const response = (await objectService.searchMetadata({ metadata: metadataSet })).data;
+      const response = (await objectService.searchMetadata({ metadata: metadataSet }, bucketId)).data;
       state.metadataSearchResults.value = response;
-    }
-    catch (error: any) {
-      toast.error('Searching metadata', error);
+    } catch (error: any) {
+      toast.error('Searching metadata', error.response?.data.detail ?? error, { life: 0 });
     }
   }
 
@@ -114,7 +105,6 @@ export const useMetadataStore = defineStore('metadata', () => {
 
     // Actions
     fetchMetadata,
-    findMetadataByObjectId,
     findValue,
     searchMetadata,
     replaceMetadata

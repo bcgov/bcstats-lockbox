@@ -1,116 +1,96 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { onMounted, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 
 import { ObjectMetadataTagForm } from '@/components/object';
-import { Button, Dialog } from '@/lib/primevue';
+import { Button, Dialog, Tag } from '@/lib/primevue';
 import { useAuthStore, useObjectStore, usePermissionStore, useTagStore, useVersionStore } from '@/store';
 import { Permissions } from '@/utils/constants';
 
 import type { Ref } from 'vue';
 import type { ObjectMetadataTagFormType } from '@/components/object/ObjectMetadataTagForm.vue';
-import type { Tagging } from '@/types';
 
 // Props
 type Props = {
   editable?: boolean;
   objectId: string;
-  versionId?: string;
 };
 
 const props = withDefaults(defineProps<Props>(), {
-  editable: true,
-  versionId: undefined
+  editable: true
 });
 
-// Emits
-const emit = defineEmits(['on-file-uploaded']);
-
 // Store
+const objectStore = useObjectStore();
 const tagStore = useTagStore();
 const versionStore = useVersionStore();
 const permissionStore = usePermissionStore();
 const { getUserId } = storeToRefs(useAuthStore());
-const { getTagging: tsGetTagging } = storeToRefs(tagStore);
-const { getTagging: vsGetTagging } = storeToRefs(versionStore);
+const { getTaggingByVersionId } = storeToRefs(versionStore);
+const { getTaggingByObjectId } = storeToRefs(tagStore);
 
 // State
+const obj = computed(() => objectStore.getObject(props.objectId));
+const versionId = defineModel<string>('versionId');
+const tags = computed(() => (versionId.value ?
+  getTaggingByVersionId.value(versionId.value) :
+  getTaggingByObjectId.value(props.objectId))?.tagset ?? []);
 const editing: Ref<boolean> = ref(false);
 const formData: Ref<ObjectMetadataTagFormType> = ref({
   filename: ''
 });
-const objectTagging: Ref<Tagging | undefined> = ref(undefined);
 
 // Actions
 const showModal = () => {
-  formData.value.filename = useObjectStore().findObjectById(props.objectId)?.name ?? '';
-  formData.value.tagset = objectTagging.value?.tagset;
+  formData.value.filename = obj.value?.name ?? '';
+  formData.value.tagset = tags.value;
 
   editing.value = true;
 };
 
 const submitModal = async (values: ObjectMetadataTagFormType) => {
-  if( values.tagset ) {
-    await tagStore.replaceTagging(props.objectId,  values.tagset, props.versionId);
+  if (values.tagset) {
+    await tagStore.replaceTagging(props.objectId, values.tagset, versionId.value);
+  } else {
+    await tagStore.deleteTagging(props.objectId, [], versionId.value);
   }
-  else {
-    await tagStore.deleteTagging(props.objectId, [], props.versionId);
-  }
-
-  emit('on-file-uploaded');
-
+  await versionStore.fetchTagging({ versionId: versionId.value as string });
   closeModal();
 };
 
 const closeModal = () => {
   editing.value = false;
 };
-
-async function load() {
-  if( props.versionId ) {
-    objectTagging.value = versionStore.findTaggingByVersionId(props.versionId);
-  }
-  else {
-    objectTagging.value = tagStore.findTaggingByObjectId(props.objectId);
-  }
-}
-
-onMounted(() => {
-  load();
-});
-
-watch( [props, tsGetTagging, vsGetTagging], () => {
-  load();
-});
 </script>
 
 <template>
-  <div
-    v-if="objectTagging?.tagset.length"
-    class="grid details-grid grid-nogutter mb-2"
-  >
-    <div class="col-12">
-      <h2 class="font-bold">
-        Tags
-      </h2>
+  <div class="grid details-grid grid-nogutter mb-2">
+    <div
+      v-if="tags.length > 0 "
+      class="col-12"
+    >
+      <h2>Tags</h2>
     </div>
     <div
-      v-for="tag in objectTagging?.tagset"
+      v-for="tag in tags"
       :key="tag.key + tag.value"
     >
-      <div class="col">
-        <Button
-          label="Primary"
-          class="p-button-raised p-button-rounded"
-        >
-          {{ tag.key + "=" + tag.value }}
-        </Button>
+      <div class="grid">
+        <div class="col mr-2">
+          <Tag
+            value="Primary"
+            rounded
+          >
+            {{ tag.key + '=' + tag.value }}
+          </Tag>
+        </div>
       </div>
     </div>
   </div>
   <div
-    v-if="editable &&
-      permissionStore.isObjectActionAllowed(props.objectId, getUserId, Permissions.UPDATE, props.objectId)"
+    v-if="
+      editable && permissionStore.isObjectActionAllowed(props.objectId, getUserId, Permissions.UPDATE, obj?.bucketId)
+    "
   >
     <Button
       outlined
@@ -129,7 +109,7 @@ watch( [props, tsGetTagging, vsGetTagging], () => {
     v-model:visible="editing"
     :draggable="false"
     :modal="true"
-    class="bcbox-info-dialog permissions-modal"
+    class="bcbox-info-dialog"
   >
     <!-- eslint-enable vue/no-v-model-argument -->
     <template #header>

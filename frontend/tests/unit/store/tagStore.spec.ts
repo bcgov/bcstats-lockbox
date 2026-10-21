@@ -30,7 +30,6 @@ afterEach(() => {
 });
 
 describe('Config Store', () => {
-
   let appStore: StoreGeneric;
   let tagStore: StoreGeneric;
 
@@ -73,18 +72,17 @@ describe('Config Store', () => {
       expect(getTaggingSpy).toHaveBeenCalledTimes(1);
       expect(getTaggingSpy).toHaveBeenCalledWith({ objectId: '000' });
       expect(mockToast).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledWith('Fetching tags', new Error);
+      expect(mockToast).toHaveBeenCalledWith('Fetching tags', new Error(), { life: 0 });
       expect(endIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
       expect(tagStore.getTagging).toStrictEqual([]);
     });
   });
 
-
   describe('findTaggingByObjectId', () => {
     it('returns matching metadata', async () => {
       tagStore.tagging = [tag];
 
-      const result = tagStore.findTaggingByObjectId('000');
+      const result = tagStore.getTaggingByObjectId('000');
 
       expect(result).toStrictEqual(tag);
     });
@@ -92,7 +90,7 @@ describe('Config Store', () => {
     it('returns undefined when no match found', async () => {
       tagStore.tagging = [tag];
 
-      const result = tagStore.findTaggingByObjectId('111');
+      const result = tagStore.getTaggingByObjectId('111');
 
       expect(result).toStrictEqual(undefined);
     });

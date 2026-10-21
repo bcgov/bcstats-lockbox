@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { watch } from 'vue';
-import {
-  ObjectMetadata,
-  ObjectProperties,
-  ObjectTag
-} from '@/components/object';
+import { watch, onMounted } from 'vue';
+import { ObjectMetadata, ObjectProperties, ObjectTag } from '@/components/object';
 import { Button } from '@/lib/primevue';
 import { useAuthStore, useMetadataStore, useObjectStore, usePermissionStore, useTagStore } from '@/store';
 import { Permissions, RouteNames } from '@/utils/constants';
+import { onDialogHide } from '@/utils/utils';
 
 // Props
 type Props = {
@@ -29,40 +26,57 @@ const { getUserId } = storeToRefs(useAuthStore());
 
 // Actions
 const closeObjectInfo = async () => {
+  onDialogHide();
   emit('close-object-info');
 };
 
-watch( props, () => {
-  const obj = objectStore.findObjectById(props.objectId);
-  if( obj &&
-     (obj.public || permissionStore.isObjectActionAllowed(obj.id, getUserId.value, Permissions.READ, obj.bucketId)))
-  {
-    tagStore.fetchTagging({objectId: props.objectId});
-    metadataStore.fetchMetadata({objectId: props.objectId});
-  }
-}, { immediate: true });
+const obj = objectStore.getObject(props.objectId);
+
+onMounted(() => {
+  document.getElementById('side-panel')?.focus();
+});
+
+watch(
+  props,
+  () => {
+    if (
+      obj &&
+      (obj.public || permissionStore.isObjectActionAllowed(obj.id, getUserId.value, Permissions.READ, obj.bucketId))
+    ) {
+      tagStore.fetchTagging({ objectId: props.objectId });
+      metadataStore.fetchMetadata({ objectId: props.objectId });
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
-  <div class="flex justify-content-start">
-    <div class="flex col align-items-center heading">
-      <font-awesome-icon
-        icon="fa-solid fa-circle-info"
-        style="font-size: 2rem"
-      />
-      <h1>File details</h1>
-    </div>
-    <div>
+  <div
+    id="side-panel"
+    tabindex="0"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="side-panel_label"
+    class="side-panel pl-4 pt-2"
+  >
+    <div class="flex panel-header align-items-start">
+      <span class="material-icons-outlined icon-medium mt-2">info</span>
+      <h1
+        id="side-panel_label"
+        class="mt-0 flex-grow-1"
+      >
+        File details
+      </h1>
       <Button
-        class="black"
-        icon="pi pi-times"
-        text
-        rounded
+        aria-label="Close"
+        class="p-button-rounded p-button-text pt-0 mt-0"
         @click="closeObjectInfo"
-      />
+      >
+        <font-awesome-icon icon="fa-xmark" />
+      </Button>
     </div>
-  </div>
-  <div class="pl-2 sidebar">
+
     <ObjectProperties
       :object-id="props.objectId"
       :full-view="false"
@@ -82,6 +96,7 @@ watch( props, () => {
         :to="{ name: RouteNames.DETAIL_OBJECTS, query: { objectId: props.objectId } }"
       >
         <Button
+          aria-label="View all details"
           label="Primary"
           class="p-button-outlined"
           @click="navigate"
@@ -97,7 +112,6 @@ watch( props, () => {
 <style lang="scss" scoped>
 h1 {
   padding-left: 1rem;
-  font-weight: bold;
 }
 
 h2 {
@@ -112,7 +126,7 @@ button {
   margin-top: 15px;
   text-indent: 10px;
 }
-.heading svg{
+.heading svg {
   color: $bcbox-primary;
 }
 </style>

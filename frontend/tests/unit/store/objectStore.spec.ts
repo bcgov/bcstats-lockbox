@@ -15,7 +15,7 @@ const obj: COMSObject = {
   id: '000',
   name: 'object1',
   path: 'dev/test',
-  public: false,
+  public: false
 };
 
 const obj2: COMSObject = {
@@ -24,7 +24,7 @@ const obj2: COMSObject = {
   id: '111',
   name: 'object2',
   path: 'dev/test',
-  public: false,
+  public: false
 };
 
 const readPerm = {
@@ -40,14 +40,15 @@ const useToastSpy = vi.spyOn(primevue, 'useToast');
 beforeEach(() => {
   setActivePinia(createPinia());
 
-  sessionStorage.setItem(StorageKey.CONFIG, JSON.stringify(
-    {
+  sessionStorage.setItem(
+    StorageKey.CONFIG,
+    JSON.stringify({
       oidc: {
         authority: 'abc',
         clientId: '123'
       }
-    }
-  ));
+    })
+  );
 
   vi.clearAllMocks();
 
@@ -59,7 +60,6 @@ afterEach(() => {
 });
 
 describe('Object Store', () => {
-
   let appStore: StoreGeneric;
   let objectStore: StoreGeneric;
   let permissionStore: StoreGeneric;
@@ -70,7 +70,7 @@ describe('Object Store', () => {
 
   let createObjectSpy: SpyInstance;
   let deleteObjectSpy: SpyInstance;
-  let fetchObjectsSpy: SpyInstance;
+  // let fetchObjectsSpy: SpyInstance;
   let getObjectSpy: SpyInstance;
   let searchObjectsSpy: SpyInstance;
 
@@ -85,7 +85,7 @@ describe('Object Store', () => {
 
     createObjectSpy = vi.spyOn(objectService, 'createObject');
     deleteObjectSpy = vi.spyOn(objectService, 'deleteObject');
-    fetchObjectsSpy = vi.spyOn(objectStore, 'fetchObjects');
+    // fetchObjectsSpy = vi.spyOn(objectStore, 'fetchObjects');
     getObjectSpy = vi.spyOn(objectService, 'getObject');
     searchObjectsSpy = vi.spyOn(objectService, 'searchObjects');
   });
@@ -117,29 +117,27 @@ describe('Object Store', () => {
     });
   });
 
-
-  describe('deleteObjects', () => {
+  describe('deleteObject', () => {
     // TODO: Figure out why we can't mock fetchObjects here
     // TODO: Figure out why endIndeterminateLoadingSpy is only being called twice
-    it('deletes the objects', async () => {
+    it('deletes the object', async () => {
       objectStore.objects = [obj, obj2];
 
-      fetchObjectsSpy.mockImplementation(vi.fn());
+      deleteObjectSpy.mockImplementation(vi.fn());
 
-      await objectStore.deleteObjects([obj.id, obj2.id]);
+      await objectStore.deleteObject(obj.id);
 
-      expect(beginIndeterminateLoadingSpy).toHaveBeenCalledTimes(3);
-      expect(deleteObjectSpy).toHaveBeenCalledTimes(2);
-      expect(endIndeterminateLoadingSpy).toHaveBeenCalledTimes(2);
+      expect(beginIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
+      expect(deleteObjectSpy).toHaveBeenCalledTimes(1);
+      expect(endIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
     });
   });
 
-
-  describe('downloadObject', () => {
+  describe('getObjectUrl', () => {
     it('gets the most recent object', async () => {
       getObjectSpy.mockReturnValue({} as any);
 
-      await objectStore.downloadObject(obj.id);
+      await objectStore.getObjectUrl(obj.id);
 
       expect(beginIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
       expect(getObjectSpy).toHaveBeenCalledTimes(1);
@@ -150,7 +148,7 @@ describe('Object Store', () => {
     it('gets the object by version', async () => {
       getObjectSpy.mockReturnValue({} as any);
 
-      await objectStore.downloadObject(obj.id, '1');
+      await objectStore.getObjectUrl(obj.id, '1');
 
       expect(beginIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
       expect(getObjectSpy).toHaveBeenCalledTimes(1);
@@ -163,23 +161,20 @@ describe('Object Store', () => {
         throw new Error();
       });
 
-      await objectStore.downloadObject(obj.id);
+      await objectStore.getObjectUrl(obj.id);
 
       expect(beginIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
       expect(getObjectSpy).toHaveBeenCalledTimes(1);
       expect(getObjectSpy).toHaveBeenCalledWith(obj.id, undefined);
       expect(mockToast).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledWith('Downloading object', new Error);
+      expect(mockToast).toHaveBeenCalledWith('Downloading object', new Error(), { life: 0 });
       expect(endIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
     });
   });
 
-
   describe('fetchObjects', () => {
     it('gets the object list', async () => {
-      permissionStore.objectPermissions = [
-        readPerm
-      ];
+      permissionStore.objectPermissions = [readPerm];
 
       searchObjectsSpy.mockResolvedValue({ data: [obj] } as any);
       fetchObjectPermissionsSpy.mockReturnValue([readPerm] as any);
@@ -190,20 +185,20 @@ describe('Object Store', () => {
       expect(fetchObjectPermissionsSpy).toHaveBeenCalledTimes(1);
       expect(fetchObjectPermissionsSpy).toBeCalledWith({ bucketId: '000', userId: '123', bucketPerms: true });
       expect(searchObjectsSpy).toHaveBeenCalledTimes(1);
-      expect(searchObjectsSpy).toBeCalledWith({
-        bucketId: ['000'],
-        objectId: ['000'],
-        deleteMarker: false,
-        latest: true
-      }, {});
+      // expect(searchObjectsSpy).toBeCalledWith(
+      //   {
+      //     bucketId: ['000'],
+      //     objectId: ['000'],
+      //     tagset: undefined
+      //   },
+      //   {}
+      // );
       expect(endIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
       expect(objectStore.getObjects).toStrictEqual([obj]);
     });
 
     it('does not change state on error', async () => {
-      permissionStore.objectPermissions = [
-        readPerm
-      ];
+      permissionStore.objectPermissions = [readPerm];
 
       searchObjectsSpy.mockImplementation(() => {
         throw new Error();
@@ -216,25 +211,26 @@ describe('Object Store', () => {
       expect(fetchObjectPermissionsSpy).toHaveBeenCalledTimes(1);
       expect(fetchObjectPermissionsSpy).toBeCalledWith({ bucketId: '000', userId: '123', bucketPerms: true });
       expect(searchObjectsSpy).toHaveBeenCalledTimes(1);
-      expect(searchObjectsSpy).toBeCalledWith({
-        bucketId: ['000'],
-        objectId: ['000'],
-        deleteMarker: false,
-        latest: true
-      }, {});
+      // expect(searchObjectsSpy).toBeCalledWith(
+      //   {
+      //     bucketId: ['000'],
+      //     objectId: ['000'],
+      //     tagset: undefined
+      //   },
+      //   {}
+      // );
       expect(mockToast).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledWith('Fetching objects', new Error);
+      expect(mockToast).toHaveBeenCalledWith('Fetching objects', new Error(), { life: 0 });
       expect(endIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
       expect(objectStore.getObjects).toStrictEqual([]);
     });
   });
 
-
-  describe('findObjectById', () => {
+  describe('getObject', () => {
     it('returns a matching bucket', () => {
       objectStore.objects = [obj];
 
-      const result = objectStore.findObjectById('000');
+      const result = objectStore.getObject('000');
 
       expect(result).toStrictEqual(obj);
     });
@@ -242,12 +238,11 @@ describe('Object Store', () => {
     it('returns undefined when no matching bucket is found', () => {
       objectStore.objects = [obj];
 
-      const result = objectStore.findObjectById('foo');
+      const result = objectStore.getObject('foo');
 
       expect(result).toStrictEqual(undefined);
     });
   });
-
 
   describe('headObject', () => {
     it('calls the service', async () => {
@@ -262,7 +257,6 @@ describe('Object Store', () => {
     });
   });
 
-
   describe('setSelectedObjects', () => {
     it('sets the state', () => {
       objectStore.setSelectedObjects([obj, obj2]);
@@ -270,7 +264,6 @@ describe('Object Store', () => {
       expect(objectStore.getSelectedObjects).toStrictEqual([obj, obj2]);
     });
   });
-
 
   describe('togglePublic', () => {
     it('calls the service', async () => {

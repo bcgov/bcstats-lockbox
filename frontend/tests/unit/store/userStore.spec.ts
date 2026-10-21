@@ -18,7 +18,7 @@ const user: User = {
   lastName: 'bar',
   userId: '000',
   username: 'foobar',
-  elevatedRights: true,
+  elevatedRights: true
 };
 
 const user2: User = {
@@ -31,7 +31,7 @@ const user2: User = {
   lastName: 'bam',
   userId: '111',
   username: 'bazbam',
-  elevatedRights: true,
+  elevatedRights: true
 };
 
 const noIdUser: User = {
@@ -44,7 +44,7 @@ const noIdUser: User = {
   lastName: 'bar',
   userId: '000',
   username: 'foobar',
-  elevatedRights: true,
+  elevatedRights: true
 };
 
 const mockToast = vi.fn();
@@ -61,7 +61,6 @@ afterEach(() => {
 });
 
 describe('User Store', () => {
-
   let appStore: StoreGeneric;
   let userStore: StoreGeneric;
 
@@ -117,29 +116,27 @@ describe('User Store', () => {
       expect(searchForUsersSpy).toHaveBeenCalledWith({ lastName: 'bar' });
       expect(useToastSpy).toHaveBeenCalledTimes(1);
       expect(mockToast).toHaveBeenCalledTimes(1);
-      expect(mockToast).toHaveBeenCalledWith('Searching users', new Error);
+      expect(mockToast).toHaveBeenCalledWith('Searching users', new Error(), { life: 0 });
       expect(endIndeterminateLoadingSpy).toHaveBeenCalledTimes(1);
       expect(userStore.userSearch).toStrictEqual([]);
     });
   });
 
-
   describe('clearSearch', () => {
     it('empties the search state', async () => {
       userStore.userSearch = [user];
 
-      expect(userStore.getUserSearch).toStrictEqual([user]);
+      expect(userStore.getUsers(['000'])).toStrictEqual([user]);
       userStore.clearSearch();
-      expect(userStore.getUserSearch).toStrictEqual([]);
+      expect(userStore.getUsers()).toStrictEqual([]);
     });
   });
 
-
-  describe('findUsersById', () => {
+  describe('getUsers', () => {
     it('returns the correct subset', async () => {
       userStore.userSearch = [user, user2];
 
-      const result = userStore.findUsersById(['000']);
+      const result = userStore.getUsers(['000']);
       expect(result).toStrictEqual([user]);
     });
   });

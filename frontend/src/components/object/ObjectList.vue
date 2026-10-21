@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import {
   DownloadObjectButton,
@@ -9,31 +9,26 @@ import {
   ObjectUpload
 } from '@/components/object';
 import { Button } from '@/lib/primevue';
-import {
-  useAuthStore,
-  useBucketStore,
-  useObjectStore,
-  usePermissionStore
-} from '@/store';
+import { useAuthStore, useObjectStore, useNavStore, usePermissionStore } from '@/store';
 import { Permissions } from '@/utils/constants';
 import { ButtonMode } from '@/utils/enums';
+import { onDialogHide } from '@/utils/utils';
 
 import type { Ref } from 'vue';
 
 // Props
 type Props = {
-  bucketId?: string
+  bucketId?: string;
 };
 
 const props = withDefaults(defineProps<Props>(), {
   bucketId: undefined
 });
 
-// Store
-const bucketStore = useBucketStore();
 //const navStore = useNavStore();
 const objectStore = useObjectStore();
 const permissionStore = usePermissionStore();
+const { focusedElement } = storeToRefs(useNavStore());
 
 const { getSelectedObjects } = storeToRefs(objectStore);
 const { getUserId } = storeToRefs(useAuthStore());
@@ -41,13 +36,11 @@ const { getUserId } = storeToRefs(useAuthStore());
 // State
 const displayUpload = ref(false);
 const objectInfoId: Ref<string | undefined> = ref(undefined);
+const objectTableKey = ref(0);
 
 const selectedObjectIds = computed(() => {
   return getSelectedObjects.value.map((o) => o.id);
 });
-
-// Actions
-//const toast = useToast();
 
 const showObjectInfo = async (objectId: string | undefined) => {
   objectInfoId.value = objectId;
@@ -59,34 +52,18 @@ const closeObjectInfo = () => {
 
 const showUpload = () => {
   displayUpload.value = true;
+  focusedElement.value = document.activeElement;
 };
 
 const closeUpload = () => {
+  onDialogHide();
   displayUpload.value = false;
+  objectTableKey.value += 1;
 };
 
-// const updateBreadcrumb = async () => {
-//   try {
-//     const bucket = await bucketStore.getBucketInfo(props.bucketId as string);
-//     navStore.replace('__listObjectsDynamic', bucket?.bucketName ?? 'Unknown bucket');
-//   } catch (error: any) {
-//     toast.add({ severity: 'error', summary: 'Unable to load bucket information.', detail: error, life: 5000 });
-//   }
-// };
-
-/*function onDeletedSuccess() {
-  toast.success('File deleted');
-}*/
-
-onMounted(async () => {
-  // Removed for now
-  // updateBreadcrumb();
-
-  await bucketStore.fetchBuckets({ userId: getUserId.value, objectPerms: true });
-  // TODO: userId+bucketPerms bringing back deleted files??
-  await objectStore.fetchObjects({ bucketId: props.bucketId, userId: getUserId.value, bucketPerms: true });
-});
-
+const onObjectDeleted = () => {
+  objectTableKey.value += 1;
+};
 </script>
 
 <template>
@@ -100,20 +77,25 @@ onMounted(async () => {
         :close-callback="closeUpload"
       />
     </div>
-    <div>
+    <div v-if="!displayUpload">
       <Button
         v-if="permissionStore.isBucketActionAllowed(props.bucketId as string, getUserId, Permissions.CREATE)"
+        v-tooltip.bottom="'Upload file'"
         class="mr-2"
         :disabled="displayUpload"
+        aria-label="Upload file"
         @click="showUpload"
       >
-        <font-awesome-icon
-          icon="fa-solid fa-upload"
-          class="mr-1"
-        /> Upload
+        <span
+          id="upload-panel-label"
+          class="material-icons-outlined mr-1"
+        >
+          file_upload
+        </span>
+        Upload
       </Button>
       <DownloadObjectButton
-        :disabled="displayUpload"
+        :disabled="displayUpload || selectedObjectIds.length === 0"
         :ids="selectedObjectIds"
         :mode="ButtonMode.BUTTON"
       />
@@ -131,6 +113,7 @@ onMounted(async () => {
     >
       <div class="flex-grow-1">
         <ObjectTable
+          :key="objectTableKey"
           :bucket-id="props.bucketId"
           :object-info-id="objectInfoId"
           @show-object-info="showObjectInfo"
@@ -138,8 +121,7 @@ onMounted(async () => {
       </div>
       <div
         v-if="objectInfoId"
-        class="flex-shrink-0 ml-3"
-        style="max-width: 33%; min-width: 33%"
+        class="flex-shrink-1 w-4"
       >
         <ObjectSidebar
           :object-id="objectInfoId"

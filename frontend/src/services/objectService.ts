@@ -1,9 +1,16 @@
-import { comsAxios } from './interceptors';
-import { setDispositionHeader } from '@/utils/utils';
 import ConfigService from './configService';
+import { comsAxios } from './interceptors';
+import { excludeMetaTag, setDispositionHeader } from '@/utils/utils';
 
 import type { AxiosRequestConfig } from 'axios';
-import type { GetMetadataOptions, GetObjectTaggingOptions, MetadataPair, SearchObjectsOptions, Tag } from '@/types';
+import type {
+  COMSObject,
+  GetMetadataOptions,
+  GetObjectTaggingOptions,
+  MetadataPair,
+  SearchObjectsOptions,
+  Tag } from '@/types';
+import { ExcludeTypes } from '@/utils/enums';
 
 const PATH = '/object';
 
@@ -19,11 +26,11 @@ export default {
   async createObject(
     object: any,
     headers: {
-      metadata?: Array<{ key: string; value: string }>,
+      metadata?: Array<{ key: string; value: string }>;
     },
     params: {
-      bucketId?: string,
-      tagset?: Array<{ key: string; value: string }>
+      bucketId?: string;
+      tagset?: Array<{ key: string; value: string }>;
     },
     axiosOptions?: AxiosRequestConfig
   ) {
@@ -37,21 +44,21 @@ export default {
       params: {
         bucketId: params.bucketId,
         tagset: {}
-      },
+      }
     };
 
     // Map the metadata if required
     if (headers.metadata) {
       config.headers = {
         ...config.headers,
-        ...Object.fromEntries((headers.metadata.map((x: { key: string; value: string }) => ([x.key, x.value]))))
+        ...Object.fromEntries(headers.metadata.map((x: { key: string; value: string }) => [x.key, x.value]))
       };
     }
 
     // Map the tagset if required
     if (params.tagset) {
       config.params.tagset = Object.fromEntries(
-        (params.tagset.map((x: { key: string; value: string }) => ([x.key, x.value])))
+        params.tagset.map((x: { key: string; value: string }) => [x.key, x.value])
       );
     }
 
@@ -79,14 +86,10 @@ export default {
    * All tags in the tag-set will be removed from the object if no tags are specified
    * @returns {Promise} An axios response
    */
-  deleteTagging(
-    objectId: string,
-    tagging: Array<Tag>,
-    versionId?: string,
-  ) {
+  deleteTagging(objectId: string, tagging: Array<Tag>, versionId?: string) {
     return comsAxios().delete(`${PATH}/${objectId}/tagging`, {
       params: {
-        tagset: Object.fromEntries((tagging.map((x: { key: string; value: string }) => ([x.key, x.value])))),
+        tagset: Object.fromEntries(tagging.map((x: { key: string; value: string }) => [x.key, x.value])),
         versionId: versionId
       }
     });
@@ -102,7 +105,12 @@ export default {
   getMetadata(headers: any = {}, params: GetMetadataOptions = {}) {
     // remove objectId array if its first element is undefined
     if (params.objectId && params.objectId[0] === undefined) delete params.objectId;
-    return comsAxios().get(`${PATH}/metadata`, { headers: headers, params: params });
+    return (
+      comsAxios()
+        .get(`${PATH}/metadata`, { headers: headers, params: params })
+        // filter out a configured list of select metadata
+        .then((response) => ({ data: excludeMetaTag(ExcludeTypes.METADATA, response.data) }))
+    );
   },
 
   /**
@@ -112,7 +120,12 @@ export default {
    * @returns {Promise} An axios response
    */
   getObjectTagging(params: GetObjectTaggingOptions = {}) {
-    return comsAxios().get(`${PATH}/tagging`, { params: params });
+    return (
+      comsAxios()
+        .get(`${PATH}/tagging`, { params: params })
+        // filter out a configured list of select tags
+        .then((response) => ({ data: excludeMetaTag(ExcludeTypes.TAGSET, response.data) }))
+    );
   },
 
   /**
@@ -120,20 +133,15 @@ export default {
    * Get an object
    * @param {string} objectId The id for the object to get
    * @param {string} versionId An optional versionId
+   * @returns {Promise} An axios response
    */
   getObject(objectId: string, versionId?: string) {
-    // Running in 'url' download mode only, could add options for other modes if needed
-    return comsAxios()
-      .get(`${PATH}/${objectId}`, {
-        params: {
-          versionId: versionId,
-          download: 'url',
-        },
-      })
-      .then((response) => {
-        const url = response.data;
-        window.open(url, '_blank');
-      });
+    return comsAxios().get(`${PATH}/${objectId}`, {
+      params: {
+        versionId: versionId,
+        download: 'url'
+      }
+    });
   },
 
   /**
@@ -144,6 +152,22 @@ export default {
    */
   headObject(objectId: string) {
     return comsAxios().head(`${PATH}/${objectId}`);
+  },
+
+  /**
+   * @function copyObjectVersion
+   * Copies a previous version of an object and places on top of the version 'stack'.
+   * If no version is provided to copy, the latest existing version will be copied.
+   * @param {string} objectId The id for the object to get
+   * @param {string} versionId An optional versionId
+   * @returns {Promise} An axios response
+   */
+  copyObjectVersion(objectId: string, versionId: string | undefined) {
+    return comsAxios().put(`${PATH}/${objectId}/version`,  undefined, {
+      params: {
+        versionId: versionId
+      }
+    });
   },
 
   /**
@@ -161,14 +185,10 @@ export default {
    * Creates a copy and new version of the object with the given metadata replacing the existing
    * @returns {Promise} An axios response
    */
-  replaceMetadata(
-    objectId: string,
-    metadata: Array<{ key: string; value: string }>,
-    versionId?: string,
-  ) {
+  replaceMetadata(objectId: string, metadata: Array<{ key: string; value: string }>, versionId?: string) {
     return comsAxios().put(`${PATH}/${objectId}/metadata`, undefined, {
       headers: {
-        ...Object.fromEntries((metadata.map((x: { key: string; value: string }) => ([x.key, x.value]))))
+        ...Object.fromEntries(metadata.map((x: { key: string; value: string }) => [x.key, x.value]))
       },
       params: {
         versionId: versionId
@@ -181,14 +201,10 @@ export default {
    * Replace the existing tag-set of an object with the set of given tags
    * @returns {Promise} An axios response
    */
-  replaceTagging(
-    objectId: string,
-    tagging: Array<Tag>,
-    versionId?: string,
-  ) {
+  replaceTagging(objectId: string, tagging: Array<Tag>, versionId?: string) {
     return comsAxios().put(`${PATH}/${objectId}/tagging`, undefined, {
       params: {
-        tagset: Object.fromEntries((tagging.map((x: { key: string; value: string }) => ([x.key, x.value])))),
+        tagset: Object.fromEntries(tagging.map((x: { key: string; value: string }) => [x.key, x.value])),
         versionId: versionId
       }
     });
@@ -198,24 +214,27 @@ export default {
    * @function searchMetadata
    * Gets a list of tags matching the given parameters
    * @param {Object} headers Optional request headers
+   * @param {bucketId}  bucketId optional
    * @returns {Promise} An axios response
    */
-  searchMetadata(
-    headers: {
-      metadata?: Array<MetadataPair>,
-    },) {
-
+  searchMetadata(headers: { metadata?: Array<MetadataPair> }, bucketId?: string) {
     const config = {
       headers: {},
+      params: { bucketId: bucketId }
     };
 
     // Map the metadata if required
     if (headers.metadata) {
       config.headers = {
-        ...Object.fromEntries((headers.metadata.map((x: { key: string; value: string }) => ([x.key, x.value]))))
+        ...Object.fromEntries(headers.metadata.map((x: { key: string; value: string }) => [x.key, x.value]))
       };
     }
-    return comsAxios().get(`${PATH}/metadata`, config);
+    return (
+      comsAxios()
+        .get(`${PATH}/metadata`, config)
+        // filter out a configured list of select metadata
+        .then((response) => ({ data: excludeMetaTag(ExcludeTypes.METADATA, response.data) }))
+    );
   },
 
   /**
@@ -224,11 +243,11 @@ export default {
    * @param {SearchObjectsOptions} params Optional query parameters
    * @returns {Promise} An axios response
    */
-  async searchObjects(params: SearchObjectsOptions = {}, headers: any = {},) {
-    // remove objectId array if its first element is undefined
+  async searchObjects(params: SearchObjectsOptions = {}, headers: any = {}) {
     if (params.objectId && params.objectId[0] === undefined) delete params.objectId;
 
-    if (params.objectId) {
+    // if searching with more than one objectId
+    if (params.objectId && params.objectId.length > 1) {
       /**
        * split calls to COMS if query params (eg objectId's)
        * will cause url length to excede 2000 characters
@@ -253,7 +272,7 @@ export default {
           [K in keyof Tag]: [K, Tag[K]];
         }[keyof Tag][];
         for (const [key, value] of Object.entries(params.tagset) as TagsetObjectEntries) {
-          urlLimit -= (10 + key.length + value.length);
+          urlLimit -= 10 + key.length + value.length;
         }
       }
 
@@ -261,14 +280,25 @@ export default {
       const space = urlLimit;
       const groupSize = Math.floor(space / 48);
 
+      // params.objectId is a list of objectsId's from permission search
+      // to apply the provided sort/limit query on OBJECT records,
+      // first return all matching objects (without filtering on permissions)
+      // and then intersect with permissions (params.objectId) list
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+      const { objectId, ...paramsWithoutObjectId } = params;
+      const objectResponse: COMSObject[] = (await comsAxios()
+        .get(PATH, { params: paramsWithoutObjectId, headers: headers })).data;
+      // and build correctly sorted list of objectId's
+      const objIds = objectResponse.filter(o => params.objectId?.includes(o.id)).map(o=> o.id);
+
       // loop through each group and push COMS result to `groups` array
-      const iterations = Math.ceil(params.objectId.length / groupSize);
+      const iterations = Math.ceil(objIds.length / groupSize);
       const groups = [];
       for (let i = 0; i < iterations; i++) {
-        const ids = params.objectId.slice(i * groupSize, ((i * groupSize) + groupSize));
+        const ids = objIds.slice(i * groupSize, i * groupSize + groupSize);
         groups.push(await comsAxios().get(PATH, { params: { ...params, objectId: ids }, headers: headers }));
       }
-      return Promise.resolve({ data: groups.flatMap(result => result.data) });
+      return Promise.resolve({ data: groups.flatMap((result) => result.data) });
     }
     // else just call COMS once
     else {
@@ -280,14 +310,21 @@ export default {
    * @function searchTagging
    * Gets a list of tags matching the given parameters
    * @param {Array<Tag>} tagset Query parameters to search on
+   * @param {bucketId} bucketId optional
    * @returns {Promise} An axios response
    */
-  searchTagging(tagset: Array<Tag>) {
-    return comsAxios().get(`${PATH}/tagging`, {
-      params: {
-        tagset: Object.fromEntries((tagset.map((x: { key: string; value: string }) => ([x.key, x.value]))))
-      }
-    });
+  searchTagging(tagset: Array<Tag>, bucketId?: string) {
+    return (
+      comsAxios()
+        .get(`${PATH}/tagging`, {
+          params: {
+            tagset: Object.fromEntries(tagset.map((x: { key: string; value: string }) => [x.key, x.value])),
+            bucketId: bucketId
+          }
+        })
+        // filter out a configured list of select tags
+        .then((response) => ({ data: excludeMetaTag(ExcludeTypes.TAGSET, response.data) }))
+    );
   },
 
   /**
@@ -300,8 +337,8 @@ export default {
   togglePublic(objectId: string, isPublic: boolean) {
     return comsAxios().patch(`${PATH}/${objectId}/public`, null, {
       params: {
-        public: isPublic,
-      },
+        public: isPublic
+      }
     });
   },
 
@@ -317,10 +354,10 @@ export default {
     objectId: string,
     object: any,
     headers: {
-      metadata?: Array<{ key: string; value: string }>,
+      metadata?: Array<{ key: string; value: string }>;
     },
     params: {
-      tagset?: Array<{ key: string; value: string }>
+      tagset?: Array<{ key: string; value: string }>;
     },
     axiosOptions?: AxiosRequestConfig
   ) {
@@ -332,21 +369,21 @@ export default {
       },
       params: {
         tagset: {}
-      },
+      }
     };
 
     // Map the metadata if required
     if (headers.metadata) {
       config.headers = {
         ...config.headers,
-        ...Object.fromEntries((headers.metadata.map((x: { key: string; value: string }) => ([x.key, x.value]))))
+        ...Object.fromEntries(headers.metadata.map((x: { key: string; value: string }) => [x.key, x.value]))
       };
     }
 
     // Map the tagset if required
     if (params.tagset) {
       config.params.tagset = Object.fromEntries(
-        (params.tagset.map((x: { key: string; value: string }) => ([x.key, x.value])))
+        params.tagset.map((x: { key: string; value: string }) => [x.key, x.value])
       );
     }
 
@@ -361,5 +398,5 @@ export default {
    */
   syncObject(objectId: string) {
     return comsAxios().get(`${PATH}/${objectId}/sync`);
-  },
+  }
 };

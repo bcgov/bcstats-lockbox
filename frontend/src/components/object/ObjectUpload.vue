@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 
 import ObjectUploadFile from '@/components/object/ObjectUploadFile.vue';
 import { Button, FileUpload, useToast } from '@/lib/primevue';
@@ -53,20 +53,23 @@ const onUpload = async (event: any) => {
         try {
           appStore.beginUploading();
 
-          const data = formData.find( (x: ObjectMetadataTagFormType) => x.filename === file.name );
+          const data = formData.find((x: ObjectMetadataTagFormType) => x.filename === file.name);
 
-          await objectStore.createObject(
+          const response = await objectStore.createObject(
             file,
             { metadata: data?.metadata },
             { bucketId: bucketId, tagset: data?.tagset },
             { timeout: 0 } // Infinite timeout for big files upload to avoid timeout error
           );
+
+          // show toast for any object updates
+          if (response?.newVersionId) toast.info(`A new version of file '${file.name}' has been created`);
+
           successfulFiles.value.push(file);
         } catch (error: any) {
           //toast.error(`Failed to upload file ${file.name}`, error);
           failedFiles.value.push(file);
-        }
-        finally {
+        } finally {
           appStore.endUploading();
         }
       })
@@ -81,7 +84,7 @@ const onUpload = async (event: any) => {
     // Update object store
     await objectStore.fetchObjects({ bucketId: bucketId, userId: getUserId.value, bucketPerms: true });
   } else {
-    toast.error('Updating file', 'Failed to acquire bucket ID');
+    toast.error('Updating file', 'Failed to acquire bucket ID', { life: 0 });
   }
 };
 
@@ -96,7 +99,11 @@ const onRemoveFailedFile = async (index: number) => {
 // Based on files prop from upload component, are we in ready to upload mode
 const noFilesChosen = (files?: Array<File>): boolean => !files?.length;
 
-const submitObjectMetaTagConfig = (values: Array<ObjectMetadataTagFormType>) => formData = values;
+const submitObjectMetaTagConfig = (values: Array<ObjectMetadataTagFormType>) => (formData = values);
+
+onMounted(() => {
+  document.getElementById('upload-panel')?.focus();
+});
 </script>
 
 <template>
@@ -109,7 +116,14 @@ const submitObjectMetaTagConfig = (values: Array<ObjectMetadataTagFormType>) => 
   >
     <template #header="{ chooseCallback, uploadCallback, clearCallback, files }">
       <div class="flex flex-wrap justify-content-between align-items-center flex-1 gap-2">
-        <div class="flex gap-2">
+        <div
+          id="upload-panel"
+          tabindex="0"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="upload-panel-label"
+          class="flex gap-2"
+        >
           <Button
             :class="{ 'p-button-outlined': !noFilesChosen(files) }"
             @click="chooseCallback()"
@@ -117,55 +131,53 @@ const submitObjectMetaTagConfig = (values: Array<ObjectMetadataTagFormType>) => 
             <font-awesome-icon
               icon="fa-solid fa-plus"
               class="mr-1"
-            />Choose
+            />
+            Choose
           </Button>
           <Button
             :class="{ 'p-button-outlined': noFilesChosen(files) }"
             :disabled="noFilesChosen(files)"
             @click="uploadCallback()"
           >
-            <font-awesome-icon
-              icon="fa-solid fa-upload"
-              class="mr-1"
-            />Start upload
+            <span
+              id="upload-panel-label"
+              class="material-icons-outlined mr-1"
+            >
+              file_upload
+            </span>
+            Start upload
           </Button>
           <Button
+            aria-label="Close"
             class="p-button-outlined"
-            @click="() => {
-              clearCallback();
-              props.closeCallback();
-            }"
+            @click="
+              () => {
+                clearCallback();
+                props.closeCallback();
+              }
+            "
           >
             <font-awesome-icon
               icon="fa-solid fa-xmark"
               class="mr-1"
-            />Close
+            />
+            Close
           </Button>
         </div>
       </div>
     </template>
     <template #empty>
       <div class="flex align-items-center justify-content-center flex-column mb-3">
-        <font-awesome-icon
-          icon="fa-solid fa-upload"
-          class="border-2 border-dashed border-circle p-5 text-7xl text-400 border-400"
-        />
-        <p class="mt-4 mb-0">
-          Drag and drop files here to select for upload. Then click "Start upload".
-        </p>
+        <span
+          id="upload-panel-label"
+          class="material-icons-outlined border-2 border-dashed border-circle p-5 text-7xl text-400 border-400"
+        >
+          file_upload
+        </span>
+        <p class="mt-4 mb-0">Drag and drop files here to select for upload. Then click "Start upload".</p>
       </div>
-      <ObjectUploadFile
-        :files="successfulFiles"
-        :badge-props="{ value: 'Complete', severity: 'success' }"
-        :remove-callback="onRemoveUploadedFile"
-      />
-      <ObjectUploadFile
-        :files="failedFiles"
-        :badge-props="{ value: 'Failed', severity: 'danger' }"
-        :remove-callback="onRemoveFailedFile"
-      />
     </template>
-    <template #content="{ files, uploadedFiles, removeFileCallback, removeUploadedFileCallback }">
+    <template #content="{ files, removeFileCallback }">
       <ObjectUploadFile
         :editable="true"
         :files="files || pendingFiles"
@@ -175,9 +187,14 @@ const submitObjectMetaTagConfig = (values: Array<ObjectMetadataTagFormType>) => 
         @submit-object-metadatatag-config="submitObjectMetaTagConfig"
       />
       <ObjectUploadFile
-        :files="uploadedFiles || successfulFiles"
+        :files="successfulFiles"
         :badge-props="{ value: 'Complete', severity: 'success' }"
-        :remove-callback="removeUploadedFileCallback"
+        :remove-callback="onRemoveUploadedFile"
+      />
+      <ObjectUploadFile
+        :files="failedFiles"
+        :badge-props="{ value: 'Failed', severity: 'danger' }"
+        :remove-callback="onRemoveFailedFile"
       />
     </template>
   </FileUpload>

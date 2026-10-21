@@ -9,6 +9,7 @@ dist
 files
 **/e2e/videos
 node_modules
+sbin
 # Ignore only top-level package-lock.json
 /package-lock.json
 
@@ -30,7 +31,6 @@ yarn-error.log*
 
 # Editor directories and files
 .idea
-.vscode
 *.iml
 *.suo
 *.ntvs*
